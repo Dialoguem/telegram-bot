@@ -19,7 +19,6 @@ from collections import Counter
 from matplotlib.ticker import MultipleLocator
 from matplotlib.colors import ListedColormap
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-from unidecode import unidecode
 from matplotlib.patches import Arc
 
 """## Leer todos los datos"""

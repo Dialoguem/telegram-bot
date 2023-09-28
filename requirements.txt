@@ -1,0 +1,5 @@
+matplotlib
+numpy
+pandas
+python-telegram-bot==13
+seaborn
