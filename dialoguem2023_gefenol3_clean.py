@@ -40,7 +40,7 @@ def leer_datos_ronda_1():
         print("Error: No se encontraron archivos de avatares con extensión .png en la carpeta 'Avatares'.")
         return None, []
 
-    avatars = [avatar for avatar in all_avatars if os.path.exists(f"../round_1/{avatar}.csv")]
+    avatars = [avatar for avatar in all_avatars if os.path.exists(f"data/round_1/{avatar}.csv")]
     print(avatars)
 
     df_ronda = pd.DataFrame(index=avatars, columns=avatars)
@@ -71,7 +71,7 @@ def leer_datos_ronda_1():
             df_ronda.loc[avatar, avatar] = df_autopuntuaciones.loc[avatar, 'autopuntuacion']
 
         # Leer las puntuaciones que el avatar ha dado a los demás
-        df_avatar = pd.read_csv(f"../round_1/{avatar}.csv", names=['avatar', 'no_sirve', 'position'])
+        df_avatar = pd.read_csv(f"data/round_1/{avatar}.csv", names=['avatar', 'no_sirve', 'position'])
         for evaluated_avatar in avatars:
             if evaluated_avatar == avatar:
                 continue
@@ -136,7 +136,7 @@ def leer_datos_ronda_2(opiniones_ronda_1, df_ronda_1):
 
         # 3.2 Leer el archivo de evaluaciones de avatar_1 si existe
         try:
-            df_avatar = pd.read_csv(f"../round_2/{avatar_1}.csv", names=['avatar', 'no_sirve', 'position'])
+            df_avatar = pd.read_csv(f"data/round_2/{avatar_1}.csv", names=['avatar', 'no_sirve', 'position'])
 
             for avatar_2 in avatars:
                 position_df = df_avatar[df_avatar['avatar'] == avatar_2]['position']
@@ -168,10 +168,10 @@ def leer_compatibilidades(num_rondas, avatars_existentes):
 
     for i in range(1, num_rondas+1):
         ronda = f'ronda_{i}'
-        avatars_ronda = [avatar for avatar in avatars_existentes if os.path.exists(f"../round_{i}/{avatar}.csv")]
+        avatars_ronda = [avatar for avatar in avatars_existentes if os.path.exists(f"data/round_{i}/{avatar}.csv")]
 
         for avatar in avatars_ronda:
-            filepath = f"../round_{i}/{avatar}_answer.csv"
+            filepath = f"data/round_{i}/{avatar}_answer.csv"
 
             # Si el archivo no existe, salta a la siguiente iteración del bucle
             if not os.path.exists(filepath):
@@ -208,7 +208,7 @@ def procesar_datos():
 
 # función auxiliar de checkeo
 def leer_datos_ronda_avatar(ronda, avatar):
-    df_avatar = pd.read_csv(f"../round_{ronda}/{avatar}.csv", names=['avatar', 'no_sirve', 'position'])
+    df_avatar = pd.read_csv(f"data/round_{ronda}/{avatar}.csv", names=['avatar', 'no_sirve', 'position'])
     df_avatar = df_avatar.groupby('avatar').first()  # Se queda con la primera entrada para cada avatar
 
     return df_avatar
