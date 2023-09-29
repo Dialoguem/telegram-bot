@@ -807,5 +807,5 @@ for avatar in avatars:
 
 generar_grafo('ronda_1',datos)
 
-generar_grafo('ronda_2')
+generar_grafo('ronda_2', datos)
 
