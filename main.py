@@ -1,7 +1,7 @@
 import csv
 import logging
 import os
-from telegram import Update, ReplyKeyboardMarkup,InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler,  CallbackQueryHandler
 from telegram import ParseMode
 
@@ -18,9 +18,6 @@ allowed_handles_group3 = ['elephant', 'crocodile', 'monkey', 'octopus', 'hedgeho
 # States
 ENTER_HANDLE, ANSWER_1, ANSWER_2, SHOW_ANSWERS_CONFIRMATION, SHOW_ANSWERS_INPUT = range(5)
 
-# Keyboard options
-#reply_keyboard = [['Yes', 'No']]
-#markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
 
 # Handler for the /start command
 def start(update: Update, context: CallbackContext):
@@ -150,7 +147,6 @@ def show_answers(update: Update, context: CallbackContext):
 
 def handle_button_press(update: Update, context: CallbackContext):
     query = update.callback_query
-    chat_id = query.message.chat_id
     data = query.data.split(',')
 
     # Extract the data from the callback data
@@ -166,23 +162,19 @@ def handle_button_press(update: Update, context: CallbackContext):
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow([column1, column2, answer])
 
-        #message = f"Selected number {answer} for {column1}, {column2}. Saved to {file_name}."
-        #context.bot.send_message(chat_id=chat_id, text=message)
     elif answer.lower() in ['yes', 'no']:
         # Save the yes/no answer in a separate CSV file
         answer_file = f"{context.user_data['handle']}_answer.csv"
         with open(answer_file, 'a', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow([column1, column2, answer])
-        #message = f"Selected answer {answer} for {column1}, {column2}. Saved to {answer_file}."
-        #context.bot.send_message(chat_id=chat_id, text=message)
         query.message.edit_reply_markup(reply_markup=None)
 
     # Remove the inline keyboard from the original message
 
 
 # Handler for handling unknown commands
-def unknown(update: Update, context: CallbackContext):
+def unknown(update: Update, _: CallbackContext):
     update.message.reply_text("Sorry, I didn't understand that command.")
 
 

@@ -7,7 +7,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                      level=logging.INFO)
 
 # Define the command handlers
-def command1(update, context):
+def command1(update, _):
     file_path = "status/status.txt"
     with open(file_path, "r+") as file:
         lines = file.readlines()
@@ -20,7 +20,7 @@ def command1(update, context):
         else:
             update.message.reply_text("Opinions are already visibles")
 
-def command2(update, context):
+def command2(update, _):
     file_path = "status/status.txt"
     with open(file_path, "r+") as file:
         lines = file.readlines()
@@ -33,7 +33,7 @@ def command2(update, context):
         else:
             update.message.reply_text("Opinions are already NOT visibles")
 
-def command3(update, context):
+def command3(update, _):
     file_path = "status/status.txt"
     with open(file_path, "r+") as file:
         lines = file.readlines()
@@ -46,7 +46,7 @@ def command3(update, context):
         else:
             update.message.reply_text("It was alredy possible to update opinions")
 
-def command4(update, context):
+def command4(update, _):
     file_path = "status/status.txt"
     with open(file_path, "r+") as file:
         lines = file.readlines()
@@ -58,7 +58,7 @@ def command4(update, context):
             update.message.reply_text("Now it is NOT possible to update opinions")
         else:
             update.message.reply_text("It was alredy NOT possible to update opinions")
-def show_file(update, context):
+def show_file(update, _):
     file_path = "status/status.txt"
     with open(file_path, "r") as file:
         file_content = file.read()

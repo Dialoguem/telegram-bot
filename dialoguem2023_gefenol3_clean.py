@@ -11,8 +11,6 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-import random
-import json
 import os
 from collections import Counter
 
@@ -52,7 +50,7 @@ def leer_datos_ronda_1():
     df_autopuntuaciones = df_autopuntuaciones[df_autopuntuaciones['avatar'].isin(avatars)]
     df_autopuntuaciones.set_index('avatar', inplace=True)
 
-    for avatar, opinion, autopuntuacion in zip(df_autopuntuaciones.index, df_autopuntuaciones['opinion'], df_autopuntuaciones['autopuntuacion']):
+    for avatar, opinion, _ in zip(df_autopuntuaciones.index, df_autopuntuaciones['opinion'], df_autopuntuaciones['autopuntuacion']):
         # Actualizar la opinión del avatar en el conjunto
         if avatar in opiniones_anteriores:
             print(f"Error: El avatar '{avatar}' tiene más de una opinión en 'answers_round_1.csv'.")
@@ -196,7 +194,7 @@ def procesar_datos():
     datos['rondas']['ronda_1'] = df_ronda_1
 
     # Leer los datos de la ronda 2
-    df_ronda_2, opiniones_ronda_2 = leer_datos_ronda_2(opiniones_ronda_1, df_ronda_1)
+    df_ronda_2, _ = leer_datos_ronda_2(opiniones_ronda_1, df_ronda_1)
     datos['rondas']['ronda_2'] = df_ronda_2
 
     # Leer las compatibilidades
@@ -593,10 +591,10 @@ def plot_avatar_compatibles(avatar, ronda):
 
     medias_avatars = [(avatar_comp, datos['rondas'][ronda].loc[avatar_comp].mean()) for avatar_comp in datos['compatibilidades'][avatar][ronda]]
     medias_avatars = sorted(medias_avatars, key=lambda x: x[1])
-    counter = Counter(media for avatar, media in medias_avatars)
+    counter = Counter(media for _, media in medias_avatars)
 
     seen = {}
-    for i, (avatar_comp, media_avatar_comp) in enumerate(medias_avatars):
+    for avatar_comp, media_avatar_comp in medias_avatars:
         todas_las_medias.append(media_avatar_comp)
 
         # calculate y position to avoid overlapping
@@ -678,10 +676,10 @@ def plot_avatar_compatibles_subj(avatar, ronda):
 
     puntuaciones_avatars = [(avatar_comp, datos['rondas'][ronda].loc[avatar_comp].loc[avatar_comp]) for avatar_comp in datos['compatibilidades'][avatar][ronda]]
     puntuaciones_avatars = sorted(puntuaciones_avatars, key=lambda x: x[1])
-    counter = Counter(puntuacion for avatar, puntuacion in puntuaciones_avatars)
+    counter = Counter(puntuacion for _, puntuacion in puntuaciones_avatars)
 
     seen = {}
-    for i, (avatar_comp, puntuacion_avatar_comp) in enumerate(puntuaciones_avatars):
+    for avatar_comp, puntuacion_avatar_comp in puntuaciones_avatars:
         todas_las_puntuaciones.append(puntuacion_avatar_comp)
 
         # calculate y position to avoid overlapping
