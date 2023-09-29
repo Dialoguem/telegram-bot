@@ -1,5 +1,6 @@
 import csv
 import logging
+import os
 from telegram import Update, ReplyKeyboardMarkup,InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler,  CallbackQueryHandler
 from telegram import ParseMode
@@ -186,8 +187,8 @@ def unknown(update: Update, context: CallbackContext):
 
 
 def main():
-    # Set up the Telegram bot. Put your bot's  token to access the HTTP API
-    updater = Updater("xxx", use_context=True)
+    token = os.environ.get('TOKEN_MAIN')
+    updater = Updater(token, use_context=True)
     dispatcher = updater.dispatcher
 
     # Define conversation handler

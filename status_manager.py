@@ -1,4 +1,5 @@
 import logging
+import os
 from telegram.ext import Updater, CommandHandler
 
 # Enable logging
@@ -64,8 +65,8 @@ def show_file(update, context):
         update.message.reply_text("Status of the assembly:\n\n" + file_content)
 
 def main():
-    # Create the Updater and pass your bot token. Put your bot's  token to access the HTTP API
-    updater = Updater("xxx", use_context=True)
+    token = os.environ.get('TOKEN_STATUS_MANAGER')
+    updater = Updater(token, use_context=True)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
