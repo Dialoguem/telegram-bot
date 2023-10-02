@@ -1,7 +1,9 @@
 import csv
 import logging
-import os
+import os.path
+import subprocess
 
+import click
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, filters,
@@ -16,7 +18,6 @@ logging.basicConfig(
 )
 
 CSV_FILE_PATH = 'data/answers_round_{0}.csv'
-MAX_LINES = 1  # Maximum number of lines to show at once
 
 # List of allowed handles
 allowed_handles_group1 = [
@@ -35,83 +36,63 @@ allowed_handles_group3 = [
     'butterfly', 'dolphin', 'snake', 'cow', 'lion', 'bear', 'penguin'
 ]
 # States
-(
-    ENTER_HANDLE, ANSWER_1, ANSWER_2, SHOW_ANSWERS_CONFIRMATION,
-    SHOW_ANSWERS_INPUT
-) = range(5)
+ENTER_HANDLE, ANSWER_1, ANSWER_2, SHOW_ANSWERS, COMPROMISE = range(5)
 
 
 # Handler for the /start command
 async def start(update, context):
     user = update.message.from_user
-    if 'handle' not in context.user_data.keys():
-        context.user_data['round'] = 1
-        context.user_data['handle'] = None
-        await update.message.reply_text(
-            f'Hello, {user.first_name}\\! '
-            'Welcome to the blind assembly *Dialoguem*\\.\n\n'
-            'By participating in this social experiment and using the '
-            'associated application, you are giving your informed consent for '
-            'the collection and usage of your anonymized data for research '
-            'purposes\\. We do not collect any personal information during '
-            'this process\\. Your privacy and data protection are our top '
-            'priorities, and we are committed to adhering to the principles '
-            'outlined in the General Data Protection Regulation \\(GDPR\\)\\.'
-            '\n\n'
-            'The data collected will be used solely for academic research and '
-            'will be anonymized to ensure your identity remains '
-            'confidential\\.\n\n'
-            'If you have any concerns or questions about data usage, please '
-            'feel free to contact us\\. We appreciate your participation and '
-            'trust in our research endeavor\\.\n\n'
-            'As a participant in this discussion, you are encouraged to share '
-            'your thoughts on an increasingly important topic: the '
-            'environmental impact of academic events, such as schools and '
-            'conferences\\.\n\n'
-            'On one side of the debate, some may argue that environmental '
-            'concerns are being overemphasized, possibly affecting the '
-            'overall experience of such events\\. They might suggest that '
-            'options like vegetarian meals and wooden utensils are '
-            'unnecessary measures\\.\n\n'
-            'On the other end of the spectrum, some argue for drastic and '
-            'immediate overhaul of our traditional academic event formats, '
-            'advocating for a nearly complete shift to online formats and '
-            'significantly reduced event frequency, emphasizing that if the '
-            "scientific community doesn't take radical steps towards "
-            'environmental responsibility, who will?\n\n'
-            'In the middle, there are also considerations of the '
-            'post\\-pandemic reality and the importance of in\\-person '
-            'networking for early\\-career researchers, as well as the '
-            'potential mental health implications of limiting such '
-            'opportunities\\.\n\n'
-            "We've set up a scale from 0 to 10 for you to express your "
-            'opinion: *0 represents* the belief that environmental concerns '
-            'are overblown, while *10 indicates* the belief that extreme, '
-            'radical changes to our event formats are urgent and '
-            'necessary\\.\n\n'
-            'Remember, this is a spectrum\\. '
-            'All shades of opinion are welcome\\!\n\n'
-            'Please enter the *avatar* that has been assigned to you, in this '
-            'way you will be anonymous throughout the process:',
-            parse_mode=ParseMode.MARKDOWN_V2
-        )
-        return ENTER_HANDLE
-    else:
-        with open('status/status.txt', 'r') as status_file:
-            line = status_file.readline()
-            line = status_file.readline()
-        if 'not' in line:
-            await update.message.reply_text(
-                'Please, wait for instructions from human facilitators.'
-            )
-        else:
-            context.user_data['round'] += 1
-            await update.message.reply_text(
-                f'Hello, {user.first_name}! '
-                'Please update your opinion if you want, '
-                'or type "keep the same opinion" if not:'
-            )
-            return ANSWER_1
+    context.user_data['round'] = 1
+    context.user_data['handle'] = None
+    await update.message.reply_text(
+        f'Hello, {user.first_name}\\! '
+        'Welcome to the blind assembly *Dialoguem*\\.\n\n'
+        'By participating in this social experiment and using the '
+        'associated application, you are giving your informed consent for '
+        'the collection and usage of your anonymized data for research '
+        'purposes\\. We do not collect any personal information during '
+        'this process\\. Your privacy and data protection are our top '
+        'priorities, and we are committed to adhering to the principles '
+        'outlined in the General Data Protection Regulation \\(GDPR\\)\\.'
+        '\n\n'
+        'The data collected will be used solely for academic research and '
+        'will be anonymized to ensure your identity remains '
+        'confidential\\.\n\n'
+        'If you have any concerns or questions about data usage, please '
+        'feel free to contact us\\. We appreciate your participation and '
+        'trust in our research endeavor\\.\n\n'
+        'As a participant in this discussion, you are encouraged to share '
+        'your thoughts on an increasingly important topic: the '
+        'environmental impact of academic events, such as schools and '
+        'conferences\\.\n\n'
+        'On one side of the debate, some may argue that environmental '
+        'concerns are being overemphasized, possibly affecting the '
+        'overall experience of such events\\. They might suggest that '
+        'options like vegetarian meals and wooden utensils are '
+        'unnecessary measures\\.\n\n'
+        'On the other end of the spectrum, some argue for drastic and '
+        'immediate overhaul of our traditional academic event formats, '
+        'advocating for a nearly complete shift to online formats and '
+        'significantly reduced event frequency, emphasizing that if the '
+        "scientific community doesn't take radical steps towards "
+        'environmental responsibility, who will?\n\n'
+        'In the middle, there are also considerations of the '
+        'post\\-pandemic reality and the importance of in\\-person '
+        'networking for early\\-career researchers, as well as the '
+        'potential mental health implications of limiting such '
+        'opportunities\\.\n\n'
+        "We've set up a scale from 0 to 10 for you to express your "
+        'opinion: *0 represents* the belief that environmental concerns '
+        'are overblown, while *10 indicates* the belief that extreme, '
+        'radical changes to our event formats are urgent and '
+        'necessary\\.\n\n'
+        'Remember, this is a spectrum\\. '
+        'All shades of opinion are welcome\\!\n\n'
+        'Please enter the *avatar* that has been assigned to you, in this '
+        'way you will be anonymous throughout the process:',
+        parse_mode=ParseMode.MARKDOWN_V2
+    )
+    return ENTER_HANDLE
 
 
 # Handler for handling user's handle
@@ -192,7 +173,7 @@ async def answer_2(update, context):
                 'will be shown anonymously to the rest of the assembly. '
                 'Now please await instructions from the human facilitators.'
             )
-            return ConversationHandler.END
+            return SHOW_ANSWERS
     else:
         await update.message.reply_text(
             'Sorry, it should be an integer between 0 and 10, '
@@ -203,6 +184,7 @@ async def answer_2(update, context):
 
 # Handler for the /show_answers command
 async def show_answers(update, context):
+    participants = click.get_current_context().params['participants']
     chat_id = update.effective_chat.id
 
     # Check the number of lines in the CSV file
@@ -211,13 +193,10 @@ async def show_answers(update, context):
         csv_reader = csv.reader(csv_file)
         num_lines = sum(1 for _ in csv_reader)
 
-    # Check if facilitators had enabled this option
-    with open('status/status.txt', 'r') as status_file:
-        line = status_file.readline()
-
-    if num_lines < MAX_LINES or 'not' in line:
+    if num_lines < participants:
         message = 'Please wait, the opinions will be available soon.'
         await context.bot.send_message(chat_id=chat_id, text=message)
+        return SHOW_ANSWERS
     else:
         with open(path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
@@ -261,9 +240,11 @@ async def show_answers(update, context):
                         chat_id=chat_id, text=message,
                         reply_markup=reply_markup
                     )
+        return COMPROMISE
 
 
 async def handle_button_press(update, context):
+    participants = click.get_current_context().params['participants']
     query = update.callback_query
     data = query.data.split(',')
 
@@ -275,21 +256,41 @@ async def handle_button_press(update, context):
     # Save the selected values in a separate CSV file
     h = context.user_data['handle']
     r = context.user_data['round']
-    file_name = f'data/round_{r}/{h}.csv'
+    if not os.path.isdir(f'data/round_{r}'):
+        subprocess.run(['mkdir', f'data/round_{r}'])
+    ans_int = f'data/round_{r}/{h}.csv'
+    ans_bool = f'data/round_{r}/{h}_answer.csv'
     if answer.isdigit() and int(answer) >= 0 and int(answer) <= 10:
-        with open(file_name, 'a', newline='') as csv_file:
+        with open(ans_int, 'a', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow([column1, column2, answer])
-
     elif answer.lower() in ['yes', 'no']:
         # Save the yes/no answer in a separate CSV file
-        answer_file = f'data/round_{r}/{h}_answer.csv'
-        with open(answer_file, 'a', newline='') as csv_file:
+        with open(ans_bool, 'a', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow([column1, column2, answer])
         await query.message.edit_reply_markup(reply_markup=None)
-
     # Remove the inline keyboard from the original message
+
+    try:
+        with open(ans_int) as f:
+            ans_int = len(f.readlines())
+    except FileNotFoundError:
+        ans_int = 0
+    try:
+        with open(ans_bool) as f:
+            ans_bool = len(f.readlines())
+    except FileNotFoundError:
+        ans_bool = 0
+    if ans_int < participants - 1 or ans_bool < participants - 1:
+        return COMPROMISE
+    else:
+        context.user_data['round'] += 1
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=(
+            'Please update your opinion if you want, '
+            'or type "keep the same opinion" if not:'
+        ))
+        return ANSWER_1
 
 
 # Handler for handling unknown commands
@@ -297,8 +298,14 @@ async def unknown(update, _):
     await update.message.reply_text("Sorry, I didn't understand that command.")
 
 
-def main():
-    token = os.environ['TOKEN_MAIN']
+@click.command()
+@click.argument('token')
+@click.argument('participants', type=click.IntRange(0, (
+    len(allowed_handles_group1)
+    + len(allowed_handles_group2)
+    + len(allowed_handles_group3)
+)))
+def main(token, participants):
     app = ApplicationBuilder().token(token).build()
 
     # Define conversation handler
@@ -314,6 +321,12 @@ def main():
             ANSWER_2: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, answer_2)
             ],
+            SHOW_ANSWERS: [
+                CommandHandler('show_opinions', show_answers)
+            ],
+            COMPROMISE: [
+                CallbackQueryHandler(handle_button_press)
+            ],
         },
         fallbacks=[]  # Empty list for fallback handlers
     )
@@ -321,12 +334,8 @@ def main():
     # Add conversation handler to the dispatcher
     app.add_handler(conversation_handler)
 
-    # Add show answers command handler
-    app.add_handler(CommandHandler('show_opinions', show_answers))
-
     # Add unknown command handler
     app.add_handler(MessageHandler(filters.COMMAND, unknown))
-    app.add_handler(CallbackQueryHandler(handle_button_press))
 
     app.run_polling()
 
