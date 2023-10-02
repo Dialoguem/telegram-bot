@@ -293,7 +293,7 @@ def unknown(update: Update, _: CallbackContext):
 
 
 def main():
-    token = os.environ.get('TOKEN_MAIN')
+    token = os.environ['TOKEN_MAIN']
     updater = Updater(token, use_context=True)
     dispatcher = updater.dispatcher
 

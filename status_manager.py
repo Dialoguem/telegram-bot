@@ -86,7 +86,7 @@ def show_file(update, _):
 
 
 def main():
-    token = os.environ.get('TOKEN_STATUS_MANAGER')
+    token = os.environ['TOKEN_STATUS_MANAGER']
     updater = Updater(token, use_context=True)
 
     # Get the dispatcher to register handlers
