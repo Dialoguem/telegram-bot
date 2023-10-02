@@ -219,29 +219,28 @@ def show_answers(update: Update, context: CallbackContext):
             csv_reader = csv.reader(csv_file)
             for row in csv_reader:
                 inline_keyboard = []
-                for i in range(11):  # Numbers from 0 to 10
-                    inline_keyboard = [
-                        [
-                            InlineKeyboardButton(
-                                str(i), callback_data=f'{row[0]},{row[3]},{i}'
-                            )
-                            for i in range(6)
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                str(i), callback_data=f'{row[0]},{row[3]},{i}'
-                            )
-                            for i in range(6, 11)
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                'Yes', callback_data=f'{row[0]},{row[3]},yes'
-                            ),
-                            InlineKeyboardButton(
-                                'No', callback_data=f'{row[0]},{row[3]},no'
-                            )
-                        ]
+                inline_keyboard = [
+                    [
+                        InlineKeyboardButton(
+                            str(i), callback_data=f'{row[0]},{row[3]},{i}'
+                        )
+                        for i in range(6)
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            str(i), callback_data=f'{row[0]},{row[3]},{i}'
+                        )
+                        for i in range(6, 11)
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            'Yes', callback_data=f'{row[0]},{row[3]},yes'
+                        ),
+                        InlineKeyboardButton(
+                            'No', callback_data=f'{row[0]},{row[3]},no'
+                        )
                     ]
+                ]
                 reply_markup = InlineKeyboardMarkup(inline_keyboard)
 
                 handle, group, answer_1, _ = row
