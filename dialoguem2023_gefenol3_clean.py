@@ -61,7 +61,7 @@ def leer_datos_ronda_1():
     opiniones_anteriores = {}
 
     df_autopuntuaciones = pd.read_csv(
-        'answers_round_1.csv',
+        'data/answers_round_1.csv',
         names=['avatar', 'opinion', 'autopuntuacion']
     )
     df_autopuntuaciones = df_autopuntuaciones[
@@ -76,11 +76,11 @@ def leer_datos_ronda_1():
         if avatar in opiniones_anteriores:
             print(
                 f'Error: El avatar "{avatar}" tiene más de una opinión '
-                'en "answers_round_1.csv".'
+                'en "data/answers_round_1.csv".'
             )
             raise ValueError(
                 'Inconsistencia en los datos: Algunos avatares tienen '
-                'más de una opinión en "answers_round_1.csv".'
+                'más de una opinión en "data/answers_round_1.csv".'
             )
         else:
             opiniones_anteriores[avatar] = opinion
@@ -92,7 +92,7 @@ def leer_datos_ronda_1():
             print(
                 f'Advertencia: El avatar "{avatar}" tiene un archivo en la '
                 'carpeta "round_1" pero no tiene una entrada en '
-                '"answers_round_1.csv".'
+                '"data/answers_round_1.csv".'
             )
             df_ronda.loc[:, avatar] = -1
             opiniones_anteriores[avatar] = None
@@ -135,14 +135,14 @@ def leer_datos_ronda_2(opiniones_ronda_1, df_ronda_1):
     # 1. Inicializar df_ronda_2 con -1
     df_ronda_2 = pd.DataFrame(-1, index=avatars, columns=avatars)
 
-    # 2. Leer el archivo 'answers_round_2.csv'
+    # 2. Leer el archivo 'data/answers_round_2.csv'
     try:
         df_autopuntuaciones = pd.read_csv(
-            'answers_round_2.csv',
+            'data/answers_round_2.csv',
             names=['avatar', 'opinion', 'autopuntuacion']
         )
     except FileNotFoundError:
-        print('Error: No se encontró el archivo "answers_round_2.csv".')
+        print('Error: No se encontró el archivo "data/answers_round_2.csv".')
         return None, None
 
     df_autopuntuaciones = df_autopuntuaciones.set_index('avatar')
@@ -179,7 +179,7 @@ def leer_datos_ronda_2(opiniones_ronda_1, df_ronda_1):
             opiniones_ronda_2[avatar] = None
             print(
                 f'Advertencia: El avatar "{avatar}" '
-                'no está presente en "answers_round_2.csv".'
+                'no está presente en "data/answers_round_2.csv".'
             )
 
     # 3. Para cada avatar_1 en avatares:

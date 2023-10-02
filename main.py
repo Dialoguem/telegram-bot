@@ -15,7 +15,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-CSV_FILE_PATH = 'answers.csv'
+CSV_FILE_PATH = 'data/answers_round_{0}.csv'
 MAX_LINES = 1  # Maximum number of lines to show at once
 
 # List of allowed handles
@@ -45,6 +45,7 @@ allowed_handles_group3 = [
 async def start(update, context):
     user = update.message.from_user
     if 'handle' not in context.user_data.keys():
+        context.user_data['round'] = 1
         context.user_data['handle'] = None
         await update.message.reply_text(
             f'Hello, {user.first_name}\\! '
@@ -104,7 +105,7 @@ async def start(update, context):
                 'Please, wait for instructions from human facilitators.'
             )
         else:
-            context.user_data['nex_rounds'] = True
+            context.user_data['round'] += 1
             await update.message.reply_text(
                 f'Hello, {user.first_name}! '
                 'Please update your opinion if you want, '
@@ -180,7 +181,8 @@ async def answer_2(update, context):
         answer_1 = context.user_data['answer_1']
 
         # Save data to CSV
-        with open('answers.csv', 'a', newline='') as csvfile:
+        path = CSV_FILE_PATH.format(context.user_data['round'])
+        with open(path, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow([handle, group, answer_1, answer])
 
@@ -204,7 +206,8 @@ async def show_answers(update, context):
     chat_id = update.effective_chat.id
 
     # Check the number of lines in the CSV file
-    with open(CSV_FILE_PATH, 'r') as csv_file:
+    path = CSV_FILE_PATH.format(context.user_data['round'])
+    with open(path, 'r') as csv_file:
         csv_reader = csv.reader(csv_file)
         num_lines = sum(1 for _ in csv_reader)
 
@@ -216,7 +219,7 @@ async def show_answers(update, context):
         message = 'Please wait, the opinions will be available soon.'
         await context.bot.send_message(chat_id=chat_id, text=message)
     else:
-        with open(CSV_FILE_PATH, 'r') as csv_file:
+        with open(path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
             for row in csv_reader:
                 inline_keyboard = []
@@ -270,7 +273,9 @@ async def handle_button_press(update, context):
     answer = data[2]
 
     # Save the selected values in a separate CSV file
-    file_name = f"{context.user_data['handle']}.csv"
+    h = context.user_data['handle']
+    r = context.user_data['round']
+    file_name = f'data/round_{r}/{h}.csv'
     if answer.isdigit() and int(answer) >= 0 and int(answer) <= 10:
         with open(file_name, 'a', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
@@ -278,7 +283,7 @@ async def handle_button_press(update, context):
 
     elif answer.lower() in ['yes', 'no']:
         # Save the yes/no answer in a separate CSV file
-        answer_file = f"{context.user_data['handle']}_answer.csv"
+        answer_file = f'data/round_{r}/{h}_answer.csv'
         with open(answer_file, 'a', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow([column1, column2, answer])
