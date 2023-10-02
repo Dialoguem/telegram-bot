@@ -1,5 +1,5 @@
 matplotlib
 numpy
 pandas
-python-telegram-bot==13
+python-telegram-bot>=20
 seaborn
