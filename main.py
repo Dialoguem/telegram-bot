@@ -2,10 +2,10 @@ import csv
 import logging
 import os
 
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, filters,
-    CallbackContext, ConversationHandler, CallbackQueryHandler
+    ConversationHandler, CallbackQueryHandler
 )
 from telegram.constants import ParseMode
 
@@ -42,7 +42,7 @@ allowed_handles_group3 = [
 
 
 # Handler for the /start command
-async def start(update: Update, context: CallbackContext):
+async def start(update, context):
     user = update.message.from_user
     if 'handle' not in context.user_data.keys():
         context.user_data['handle'] = None
@@ -114,7 +114,7 @@ async def start(update: Update, context: CallbackContext):
 
 
 # Handler for handling user's handle
-async def enter_handle(update: Update, context: CallbackContext):
+async def enter_handle(update, context):
     handle = update.message.text.lower().strip()
     if handle in allowed_handles_group1:
         context.user_data['handle'] = handle
@@ -149,7 +149,7 @@ async def enter_handle(update: Update, context: CallbackContext):
 
 
 # Handler for handling user's first answer
-async def answer_1(update: Update, context: CallbackContext):
+async def answer_1(update, context):
     if ('answer_1' in context.user_data.keys()
             and 'keep' in update.message.text.lower().strip()
             and 'opinion' in update.message.text.lower().strip()):
@@ -172,7 +172,7 @@ async def answer_1(update: Update, context: CallbackContext):
 
 
 # Handler for handling user's second answer
-async def answer_2(update: Update, context: CallbackContext):
+async def answer_2(update, context):
     answer = update.message.text.strip()
     if answer.isdigit() and int(answer) >= 0 and int(answer) <= 10:
         handle = context.user_data['handle']
@@ -200,7 +200,7 @@ async def answer_2(update: Update, context: CallbackContext):
 
 
 # Handler for the /show_answers command
-async def show_answers(update: Update, context: CallbackContext):
+async def show_answers(update, context):
     chat_id = update.effective_chat.id
 
     # Check the number of lines in the CSV file
@@ -260,7 +260,7 @@ async def show_answers(update: Update, context: CallbackContext):
                     )
 
 
-async def handle_button_press(update: Update, context: CallbackContext):
+async def handle_button_press(update, context):
     query = update.callback_query
     data = query.data.split(',')
 
@@ -288,7 +288,7 @@ async def handle_button_press(update: Update, context: CallbackContext):
 
 
 # Handler for handling unknown commands
-async def unknown(update: Update, _: CallbackContext):
+async def unknown(update, _):
     await update.message.reply_text("Sorry, I didn't understand that command.")
 
 
