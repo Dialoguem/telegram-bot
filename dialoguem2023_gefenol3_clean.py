@@ -357,7 +357,7 @@ for ronda, df in datos['rondas'].items():
         ax.add_artist(ab)
 
     # Guardar la figura con el título completo como nombre de archivo
-    plt.savefig(f'{ronda}_puntuaciones.png', bbox_inches='tight')
+    plt.savefig(f'fig/{ronda}_puntuaciones.png', bbox_inches='tight')
 
 # compatibles giraffe: ['dolphin', 'lion', 'elephant', 'cow', 'frog', 'monkey',
 # 'bear', 'sheep', 'octopus']
@@ -420,7 +420,7 @@ for ronda, df in datos['rondas'].items():
         ax.add_artist(ab)
 
     # Guardar la figura con el nombre del archivo que incluye "simetria"
-    plt.savefig(f'{ronda}_simetria.png', bbox_inches='tight')
+    plt.savefig(f'fig/{ronda}_simetria.png', bbox_inches='tight')
 
 """### Quién se ha movido y hacia dónde?
 
@@ -566,7 +566,7 @@ ax.tick_params(axis='x', labelsize=16)
 ax.set_xlabel('Puntuació mitjana', fontsize=18)
 
 # Guardar la figura
-plt.savefig('avatar_move_mitjanes.png', bbox_inches='tight')
+plt.savefig('fig/avatar_move_mitjanes.png', bbox_inches='tight')
 
 """#### Percepción propia"""
 
@@ -702,7 +702,7 @@ ax.tick_params(axis='x', labelsize=16)
 ax.set_xlabel('Puntuació propia', fontsize=18)
 
 # Guardar la figura
-plt.savefig('avatar_move_propies.png', bbox_inches='tight')
+plt.savefig('fig/avatar_move_propies.png', bbox_inches='tight')
 
 
 """## Ego-networks of compatibilities
@@ -810,7 +810,7 @@ def plot_avatar_compatibles(avatar, ronda):
     )
 
     # Guardar la figura con el nombre deseado
-    fig.savefig(f'compatibles_{avatar}_{ronda}.png')
+    fig.savefig(f'fig/compatibles_{avatar}_{ronda}.png')
 
 
 avatar = 'pepper'
@@ -929,7 +929,7 @@ def plot_avatar_compatibles_subj(avatar, ronda):
     )
 
     # Guardar la figura con el nombre deseado
-    fig.savefig(f'compatibles_{avatar}_{ronda}_SUBJ.png')
+    fig.savefig(f'fig/compatibles_{avatar}_{ronda}_SUBJ.png')
 
 
 avatar = 'broccoli'
@@ -999,7 +999,7 @@ def generar_grafo(ronda, datos):
         spine.set_visible(False)
 
     # Guardar la figura con el nombre deseado
-    fig.savefig(f'xarxa_compatibles_{ronda}.png')
+    fig.savefig(f'fig/xarxa_compatibles_{ronda}.png')
 
 
 # rondas = ['ronda ' + str(i+1) for i in range(num_rondas)]
