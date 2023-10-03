@@ -36,14 +36,16 @@ avatar_groups = {
     'penguin': 3, 'sheep': 3, 'snake': 3, 'tiger': 3, 'turtle': 3
 }
 
-State = enum.Enum(
-    'State',
-    ['ENTER_AVATAR', 'ANSWER_1', 'ANSWER_2', 'SHOW_ANSWERS', 'COMPROMISE']
-)
+State = enum.Enum('State', [
+    'ENTER_AVATAR', 'ANSWER_1', 'ANSWER_2', 'SHOW_ANSWERS', 'COMPROMISE',
+    'CHANGE'
+])
 
 
-def options_markup(options, options_per_row):
+def options_markup(options, options_per_row=None):
     o = [InlineKeyboardButton(o, callback_data=o) for o in options]
+    if options_per_row is None:
+        options_per_row = len(o)
     o = [o[i:i+options_per_row] for i in range(0, len(o), options_per_row)]
     return InlineKeyboardMarkup(o)
 
@@ -116,16 +118,9 @@ async def enter_avatar(update, context):
 
 # Handler for handling user's first answer
 async def answer_1(update, context):
-    if ('answer_1' in context.user_data.keys()
-            and 'keep' in update.message.text.lower().strip()
-            and 'opinion' in update.message.text.lower().strip()):
-        await update.message.reply_text(
-            'Okay, you want to keep the same opinion.'
-        )
-    else:
-        answer = update.message.text.strip()
-        context.user_data['answer_1'] = answer
-        await update.message.reply_text('Okay.')
+    answer = update.message.text.strip()
+    context.user_data['answer_1'] = answer
+    await update.message.reply_text('Okay.')
     await update.message.reply_text(
         'Now provide an integer number between 0 and 10 '
         'describing your opinion, '
@@ -272,11 +267,37 @@ async def handle_button_press(update, context):
         return State.COMPROMISE
     else:
         context.user_data['round'] += 1
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=(
-            'Please update your opinion if you want, '
-            'or type "keep the same opinion" if not:'
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text='Do you want to change your opinion?',
+            reply_markup=options_markup(['Yes', 'No'])
+        )
+        return State.CHANGE
+
+
+async def change(update, context):
+    chat_id = update.effective_chat.id
+    change = update.callback_query.data
+    if change:
+        await context.bot.send_message(chat_id=chat_id, text=(
+            'Okay. Please, write a short message describing '
+            'your attitute about the topic of the assembly.'
         ))
         return State.ANSWER_1
+    else:
+        await context.bot.send_message(chat_id=chat_id, text=(
+            'Okay, you want to keep the same opinion.'
+        ))
+        await update.message.reply_text(
+            'Now provide an integer number between 0 and 10 '
+            'describing your opinion, '
+            'where *0 represents* the belief that environmental concerns '
+            'are overblown, while *10 indicates* the belief that extreme, '
+            'radical changes to our event formats are urgent and '
+            'necessary\\.\n\n',
+            parse_mode=ParseMode.MARKDOWN_V2
+        )
+        return State.ANSWER_2
 
 
 # Handler for handling unknown commands
@@ -308,6 +329,7 @@ def main(token, participants):
             State.COMPROMISE: [
                 CallbackQueryHandler(handle_button_press)
             ],
+            State.CHANGE: [CallbackQueryHandler(change)]
         },
         fallbacks=[]
     ))
