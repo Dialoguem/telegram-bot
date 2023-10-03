@@ -21,25 +21,31 @@ logging.basicConfig(
 CSV_FILE_PATH = 'data/answers_round_{0}.csv'
 
 handle_groups = {
-    'radish': 1, 'peas': 1, 'squash': 1, 'sweet potato': 1, 'pepper': 1,
-    'celery': 1, 'onion': 1, 'tomato': 1, 'beet': 1, 'artichoke': 1,
-    'couliflower': 1, 'eggplant': 1, 'green beans': 1, 'turnip': 1,
-    'potato': 1, 'lettuce': 1, 'garlic': 1, 'pumpkin': 1, 'asparagus': 1,
-    'broccoli': 1,
-    'peach': 2, 'melon': 2, 'grape': 2, 'pineapple': 2, 'banana': 2,
-    'cherry': 2, 'blueberry': 2, 'apple': 2, 'red apple': 2, 'coconut': 2,
-    'lemon': 2, 'watermelon': 2, 'kiwi': 2, 'pear': 2, 'orange': 2, 'mango': 2,
-    'strawberry': 2, 'avocado': 2,
-    'elephant': 3, 'crocodile': 3, 'monkey': 3, 'octopus': 3, 'hedgehog': 3,
-    'fox': 3, 'giraffe': 3, 'goat': 3, 'cat': 3, 'turtle': 3, 'sheep': 3,
-    'frog': 3, 'bee': 3, 'tiger': 3, 'dog': 3, 'butterfly': 3, 'dolphin': 3,
-    'snake': 3, 'cow': 3, 'lion': 3, 'bear': 3, 'penguin': 3
+    'asparagus': 1, 'artichoke': 1, 'beet': 1, 'broccoli': 1, 'celery': 1,
+    'couliflower': 1, 'eggplant': 1, 'garlic': 1, 'green beans': 1,
+    'lettuce': 1, 'onion': 1, 'potato': 1, 'peas': 1, 'pepper': 1,
+    'pumpkin': 1, 'radish': 1, 'squash': 1, 'sweet potato': 1, 'tomato': 1,
+    'turnip': 1,
+    'apple': 2, 'avocado': 2, 'banana': 2, 'blueberry': 2, 'cherry': 2,
+    'coconut': 2, 'grape': 2, 'kiwi': 2, 'lemon': 2, 'mango': 2, 'melon': 2,
+    'orange': 2, 'peach': 2, 'pear': 2, 'pineapple': 2, 'red apple': 2,
+    'strawberry': 2, 'watermelon': 2,
+    'bear': 3, 'bee': 3, 'butterfly': 3, 'cat': 3, 'cow': 3, 'crocodile': 3,
+    'dog': 3, 'dolphin': 3, 'elephant': 3, 'fox': 3, 'frog': 3, 'giraffe': 3,
+    'goat': 3, 'hedgehog': 3, 'lion': 3, 'monkey': 3, 'octopus': 3,
+    'penguin': 3, 'sheep': 3, 'snake': 3, 'tiger': 3, 'turtle': 3
 }
 
 State = enum.Enum(
     'State',
     ['ENTER_HANDLE', 'ANSWER_1', 'ANSWER_2', 'SHOW_ANSWERS', 'COMPROMISE']
 )
+
+
+def options_markup(options, options_per_row):
+    o = [InlineKeyboardButton(o, callback_data=o) for o in options]
+    o = [o[i:i+options_per_row] for i in range(0, len(o), options_per_row)]
+    return InlineKeyboardMarkup(o)
 
 
 # Handler for the /start command
@@ -69,49 +75,44 @@ async def start(update, context):
     await update.message.reply_text(
         'Please enter the *avatar* that has been assigned to you, in this '
         'way you will be anonymous throughout the process:',
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=options_markup(handle_groups.keys(), options_per_row=5)
     )
     return State.ENTER_HANDLE
 
 
 # Handler for handling user's handle
 async def enter_handle(update, context):
-    handle = update.message.text.lower().strip()
-    if handle in handle_groups:
-        context.user_data['handle'] = handle
-        context.user_data['group'] = handle_groups[handle]
-        await update.message.reply_text('Great!')
-        await update.message.reply_text(
-            'As a participant in this discussion, you are encouraged to share '
-            'your thoughts on an increasingly important topic: the '
-            'environmental impact of academic events, such as schools and '
-            'conferences.\n\n'
-            'On one side of the debate, some may argue that environmental '
-            'concerns are being overemphasized, possibly affecting the '
-            'overall experience of such events. They might suggest that '
-            'options like vegetarian meals and wooden utensils are '
-            'unnecessary measures.\n\n'
-            'On the other end of the spectrum, some argue for drastic and '
-            'immediate overhaul of our traditional academic event formats, '
-            'advocating for a nearly complete shift to online formats and '
-            'significantly reduced event frequency, emphasizing that if the '
-            "scientific community doesn't take radical steps towards "
-            'environmental responsibility, who will?\n\n'
-            'In the middle, there are also considerations of the '
-            'post-pandemic reality and the importance of in-person '
-            'networking for early-career researchers, as well as the '
-            'potential mental health implications of limiting such '
-            'opportunities.\n\n'
-            'Please, write a short message describing '
-            'your attitute about the topic.'
-        )
-        return State.ANSWER_1
-    else:
-        await update.message.reply_text(
-            'Sorry, the avatar you have entered is not valid. '
-            'Please enter a valid avatar:'
-        )
-        return State.ENTER_HANDLE
+    chat_id = update.effective_chat.id
+    handle = update.callback_query.data
+    context.user_data['handle'] = handle
+    context.user_data['group'] = handle_groups[handle]
+    await context.bot.send_message(chat_id=chat_id, text='Great!')
+    await context.bot.send_message(chat_id=chat_id, text=(
+        'As a participant in this discussion, you are encouraged to share '
+        'your thoughts on an increasingly important topic: the '
+        'environmental impact of academic events, such as schools and '
+        'conferences.\n\n'
+        'On one side of the debate, some may argue that environmental '
+        'concerns are being overemphasized, possibly affecting the '
+        'overall experience of such events. They might suggest that '
+        'options like vegetarian meals and wooden utensils are '
+        'unnecessary measures.\n\n'
+        'On the other end of the spectrum, some argue for drastic and '
+        'immediate overhaul of our traditional academic event formats, '
+        'advocating for a nearly complete shift to online formats and '
+        'significantly reduced event frequency, emphasizing that if the '
+        "scientific community doesn't take radical steps towards "
+        'environmental responsibility, who will?\n\n'
+        'In the middle, there are also considerations of the '
+        'post-pandemic reality and the importance of in-person '
+        'networking for early-career researchers, as well as the '
+        'potential mental health implications of limiting such '
+        'opportunities.\n\n'
+        'Please, write a short message describing '
+        'your attitute about the topic.'
+    ))
+    return State.ANSWER_1
 
 
 # Handler for handling user's first answer
@@ -294,7 +295,7 @@ def main(token, participants):
         entry_points=[CommandHandler('dialoguem', start)],
         states={
             State.ENTER_HANDLE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, enter_handle)
+                CallbackQueryHandler(enter_handle)
             ],
             State.ANSWER_1: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, answer_1)
