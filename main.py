@@ -37,8 +37,7 @@ avatar_groups = {
 }
 
 State = enum.Enum('State', [
-    'ENTER_AVATAR', 'ANSWER_1', 'ANSWER_2', 'SHOW_ANSWERS', 'COMPROMISE',
-    'CHANGE'
+    'AVATAR', 'OPINE', 'RATE_OWN', 'SHOW', 'COMPROMISE', 'CHANGE'
 ])
 
 
@@ -50,8 +49,7 @@ def options_markup(options, options_per_row=None):
     return InlineKeyboardMarkup(o)
 
 
-# Handler for the /start command
-async def start(update, context):
+async def dialoguem(update, context):
     user = update.message.from_user
     context.user_data['round'] = 1
     context.user_data['handle'] = None
@@ -80,10 +78,10 @@ async def start(update, context):
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=options_markup(avatar_groups.keys(), options_per_row=5)
     )
-    return State.ENTER_HANDLE
+    return State.AVATAR
 
 
-async def enter_avatar(update, context):
+async def avatar(update, context):
     chat_id = update.effective_chat.id
     avatar = update.callback_query.data
     context.user_data['avatar'] = avatar
@@ -113,13 +111,11 @@ async def enter_avatar(update, context):
         'Please, write a short message describing '
         'your attitute about the topic.'
     ))
-    return State.ANSWER_1
+    return State.OPINE
 
 
-# Handler for handling user's first answer
-async def answer_1(update, context):
-    answer = update.message.text.strip()
-    context.user_data['answer_1'] = answer
+async def opine(update, context):
+    context.user_data['opinion'] = update.message.text.strip()
     await update.message.reply_text('Okay.')
     await update.message.reply_text(
         'Now provide an integer number between 0 and 10 '
@@ -132,15 +128,15 @@ async def answer_1(update, context):
         'All shades of opinion are welcome\\!\n\n',
         parse_mode=ParseMode.MARKDOWN_V2
     )
-    return State.ANSWER_2
+    return State.RATE_OWN
 
 
-async def answer_2(update, context):
+async def rate_own(update, context):
     answer = update.message.text.strip()
     if answer.isdigit() and int(answer) >= 0 and int(answer) <= 10:
         avatar = context.user_data['avatar']
         group = context.user_data['group']
-        answer_1 = context.user_data['answer_1']
+        answer_1 = context.user_data['opinion']
 
         # Save data to CSV
         path = CSV_FILE_PATH.format(context.user_data['round'])
@@ -154,17 +150,16 @@ async def answer_2(update, context):
                 'will be shown anonymously to the rest of the assembly. '
                 'Now please await instructions from the human facilitators.'
             )
-            return State.SHOW_ANSWERS
+            return State.SHOW
     else:
         await update.message.reply_text(
             'Sorry, it should be an integer between 0 and 10, '
             'where 0 is completely against and 10 completely in favor:'
         )
-        return State.ANSWER_2
+        return State.RATE_OWN
 
 
-# Handler for the /show_answers command
-async def show_answers(update, context):
+async def show(update, context):
     participants = click.get_current_context().params['participants']
     chat_id = update.effective_chat.id
 
@@ -177,7 +172,7 @@ async def show_answers(update, context):
     if num_lines < participants:
         message = 'Please wait, the opinions will be available soon.'
         await context.bot.send_message(chat_id=chat_id, text=message)
-        return State.SHOW_ANSWERS
+        return State.SHOW
     else:
         with open(path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
@@ -224,7 +219,7 @@ async def show_answers(update, context):
         return State.COMPROMISE
 
 
-async def handle_button_press(update, context):
+async def compromise(update, context):
     participants = click.get_current_context().params['participants']
     query = update.callback_query
     data = query.data.split(',')
@@ -283,7 +278,7 @@ async def change(update, context):
             'Okay. Please, write a short message describing '
             'your attitute about the topic of the assembly.'
         ))
-        return State.ANSWER_1
+        return State.OPINE
     else:
         await context.bot.send_message(chat_id=chat_id, text=(
             'Okay, you want to keep the same opinion.'
@@ -297,7 +292,7 @@ async def change(update, context):
             'necessary\\.\n\n',
             parse_mode=ParseMode.MARKDOWN_V2
         )
-        return State.ANSWER_2
+        return State.RATE_OWN
 
 
 # Handler for handling unknown commands
@@ -312,23 +307,17 @@ def main(token, participants):
     app = ApplicationBuilder().token(token).build()
 
     app.add_handler(ConversationHandler(
-        entry_points=[CommandHandler('dialoguem', start)],
+        entry_points=[CommandHandler('dialoguem', dialoguem)],
         states={
-            State.ENTER_AVATAR: [
-                CallbackQueryHandler(enter_avatar)
+            State.AVATAR: [CallbackQueryHandler(avatar)],
+            State.OPINE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, opine)
             ],
-            State.ANSWER_1: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, answer_1)
+            State.RATE_OWN: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, rate_own)
             ],
-            State.ANSWER_2: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, answer_2)
-            ],
-            State.SHOW_ANSWERS: [
-                CommandHandler('show_opinions', show_answers)
-            ],
-            State.COMPROMISE: [
-                CallbackQueryHandler(handle_button_press)
-            ],
+            State.SHOW: [CommandHandler('show_opinions', show)],
+            State.COMPROMISE: [CallbackQueryHandler(compromise)],
             State.CHANGE: [CallbackQueryHandler(change)]
         },
         fallbacks=[]
