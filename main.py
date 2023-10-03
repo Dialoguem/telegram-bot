@@ -52,7 +52,6 @@ def options_markup(options, options_per_row=None):
 async def dialoguem(update, context):
     user = update.message.from_user
     context.user_data['round'] = 1
-    context.user_data['handle'] = None
     await update.message.reply_text(
         f'Hello, {user.first_name}\\! '
         'Welcome to the blind assembly *Dialoguem*\\.\n\n'
@@ -140,9 +139,8 @@ async def rate_own(update, context):
     rating = update.callback_query.data
 
     path = CSV_FILE_PATH.format(context.user_data['round'])
-    with open(path, 'a', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow([avatar, group, opinion, rating])
+    with open(path, 'a') as csvfile:
+        csv.writer(csvfile).writerow([avatar, group, opinion, rating])
 
     await context.bot.send_message(chat_id=chat_id, text=(
         'Thank you for providing your opinion! '
@@ -157,11 +155,9 @@ async def show(update, context):
     participants = click.get_current_context().params['participants']
     chat_id = update.effective_chat.id
 
-    # Check the number of lines in the CSV file
     path = CSV_FILE_PATH.format(context.user_data['round'])
     with open(path, 'r') as csv_file:
-        csv_reader = csv.reader(csv_file)
-        num_lines = sum(1 for _ in csv_reader)
+        num_lines = len(csv_file.readlines())
 
     if num_lines < participants:
         message = 'Please wait, the opinions will be available soon.'
@@ -171,7 +167,6 @@ async def show(update, context):
         with open(path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
             for row in csv_reader:
-                inline_keyboard = []
                 inline_keyboard = [
                     [
                         InlineKeyboardButton(
