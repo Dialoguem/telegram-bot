@@ -126,37 +126,31 @@ async def opine(update, context):
         'necessary\\.\n\n'
         'Remember, this is a spectrum\\. '
         'All shades of opinion are welcome\\!\n\n',
-        parse_mode=ParseMode.MARKDOWN_V2
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=options_markup(range(11), options_per_row=6)
     )
     return State.RATE_OWN
 
 
 async def rate_own(update, context):
-    answer = update.message.text.strip()
-    if answer.isdigit() and int(answer) >= 0 and int(answer) <= 10:
-        avatar = context.user_data['avatar']
-        group = context.user_data['group']
-        answer_1 = context.user_data['opinion']
+    chat_id = update.effective_chat.id
+    avatar = context.user_data['avatar']
+    group = context.user_data['group']
+    opinion = context.user_data['opinion']
+    rating = update.callback_query.data
 
-        # Save data to CSV
-        path = CSV_FILE_PATH.format(context.user_data['round'])
-        with open(path, 'a', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow([avatar, group, answer_1, answer])
+    path = CSV_FILE_PATH.format(context.user_data['round'])
+    with open(path, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([avatar, group, opinion, rating])
 
-            await update.message.reply_text(
-                'Thank you for providing your opinion! '
-                'They have been recorded and '
-                'will be shown anonymously to the rest of the assembly. '
-                'Now please await instructions from the human facilitators.'
-            )
-            return State.SHOW
-    else:
-        await update.message.reply_text(
-            'Sorry, it should be an integer between 0 and 10, '
-            'where 0 is completely against and 10 completely in favor:'
-        )
-        return State.RATE_OWN
+    await context.bot.send_message(chat_id=chat_id, text=(
+        'Thank you for providing your opinion! '
+        'They have been recorded and '
+        'will be shown anonymously to the rest of the assembly. '
+        'Now please await instructions from the human facilitators.'
+    ))
+    return State.SHOW
 
 
 async def show(update, context):
@@ -313,9 +307,7 @@ def main(token, participants):
             State.OPINE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, opine)
             ],
-            State.RATE_OWN: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, rate_own)
-            ],
+            State.RATE_OWN: [CallbackQueryHandler(rate_own)],
             State.SHOW: [CommandHandler('show_opinions', show)],
             State.COMPROMISE: [CallbackQueryHandler(compromise)],
             State.CHANGE: [CallbackQueryHandler(change)]
