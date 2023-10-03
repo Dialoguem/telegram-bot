@@ -20,22 +20,21 @@ logging.basicConfig(
 
 CSV_FILE_PATH = 'data/answers_round_{0}.csv'
 
-# List of allowed handles
-allowed_handles_group1 = [
-    'radish', 'peas', 'squash', 'sweet potato', 'pepper', 'celery', 'onion',
-    'tomato', 'beet', 'artichoke', 'couliflower', 'eggplant', 'green beans',
-    'turnip', 'potato', 'lettuce', 'garlic', 'pumpkin', 'asparagus', 'broccoli'
-]
-allowed_handles_group2 = [
-    'peach', 'melon', 'grape', 'pineapple', 'banana', 'cherry', 'blueberry',
-    'apple', 'red apple', 'coconut', 'lemon', 'watermelon', 'kiwi', 'pear',
-    'orange', 'mango', 'strawberry', 'avocado'
-]
-allowed_handles_group3 = [
-    'elephant', 'crocodile', 'monkey', 'octopus', 'hedgehog', 'fox', 'giraffe',
-    'goat', 'cat', 'turtle', 'sheep', 'frog', 'bee', 'tiger', 'dog',
-    'butterfly', 'dolphin', 'snake', 'cow', 'lion', 'bear', 'penguin'
-]
+handle_groups = {
+    'radish': 1, 'peas': 1, 'squash': 1, 'sweet potato': 1, 'pepper': 1,
+    'celery': 1, 'onion': 1, 'tomato': 1, 'beet': 1, 'artichoke': 1,
+    'couliflower': 1, 'eggplant': 1, 'green beans': 1, 'turnip': 1,
+    'potato': 1, 'lettuce': 1, 'garlic': 1, 'pumpkin': 1, 'asparagus': 1,
+    'broccoli': 1,
+    'peach': 2, 'melon': 2, 'grape': 2, 'pineapple': 2, 'banana': 2,
+    'cherry': 2, 'blueberry': 2, 'apple': 2, 'red apple': 2, 'coconut': 2,
+    'lemon': 2, 'watermelon': 2, 'kiwi': 2, 'pear': 2, 'orange': 2, 'mango': 2,
+    'strawberry': 2, 'avocado': 2,
+    'elephant': 3, 'crocodile': 3, 'monkey': 3, 'octopus': 3, 'hedgehog': 3,
+    'fox': 3, 'giraffe': 3, 'goat': 3, 'cat': 3, 'turtle': 3, 'sheep': 3,
+    'frog': 3, 'bee': 3, 'tiger': 3, 'dog': 3, 'butterfly': 3, 'dolphin': 3,
+    'snake': 3, 'cow': 3, 'lion': 3, 'bear': 3, 'penguin': 3
+}
 
 State = enum.Enum(
     'State',
@@ -102,25 +101,9 @@ async def start(update, context):
 # Handler for handling user's handle
 async def enter_handle(update, context):
     handle = update.message.text.lower().strip()
-    if handle in allowed_handles_group1:
+    if handle in handle_groups:
         context.user_data['handle'] = handle
-        context.user_data['group'] = 1
-        await update.message.reply_text(
-            'Great! Please, write a short message describing '
-            'your attitute about the theme of the assembly. xxx:'
-        )
-        return State.ANSWER_1
-    elif handle in allowed_handles_group2:
-        context.user_data['handle'] = handle
-        context.user_data['group'] = 2
-        await update.message.reply_text(
-            'Great! Please, write a short message describing '
-            'your attitute about the theme of the assembly. xxx:'
-        )
-        return State.ANSWER_1
-    elif handle in allowed_handles_group3:
-        context.user_data['handle'] = handle
-        context.user_data['group'] = 3
+        context.user_data['group'] = handle_groups[handle]
         await update.message.reply_text(
             'Great! Please, write a short message describing '
             'your attitute about the theme of the assembly. xxx:'
@@ -304,11 +287,7 @@ async def unknown(update, _):
 
 @click.command()
 @click.argument('token')
-@click.argument('participants', type=click.IntRange(0, (
-    len(allowed_handles_group1)
-    + len(allowed_handles_group2)
-    + len(allowed_handles_group3)
-)))
+@click.argument('participants', type=click.IntRange(0, (len(handle_groups))))
 def main(token, participants):
     app = ApplicationBuilder().token(token).build()
 
