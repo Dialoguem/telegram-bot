@@ -20,7 +20,7 @@ logging.basicConfig(
 
 CSV_FILE_PATH = 'data/answers_round_{0}.csv'
 
-handle_groups = {
+avatar_groups = {
     'asparagus': 1, 'artichoke': 1, 'beet': 1, 'broccoli': 1, 'celery': 1,
     'couliflower': 1, 'eggplant': 1, 'garlic': 1, 'green beans': 1,
     'lettuce': 1, 'onion': 1, 'potato': 1, 'peas': 1, 'pepper': 1,
@@ -38,7 +38,7 @@ handle_groups = {
 
 State = enum.Enum(
     'State',
-    ['ENTER_HANDLE', 'ANSWER_1', 'ANSWER_2', 'SHOW_ANSWERS', 'COMPROMISE']
+    ['ENTER_AVATAR', 'ANSWER_1', 'ANSWER_2', 'SHOW_ANSWERS', 'COMPROMISE']
 )
 
 
@@ -76,17 +76,16 @@ async def start(update, context):
         'Please enter the *avatar* that has been assigned to you, in this '
         'way you will be anonymous throughout the process:',
         parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=options_markup(handle_groups.keys(), options_per_row=5)
+        reply_markup=options_markup(avatar_groups.keys(), options_per_row=5)
     )
     return State.ENTER_HANDLE
 
 
-# Handler for handling user's handle
-async def enter_handle(update, context):
+async def enter_avatar(update, context):
     chat_id = update.effective_chat.id
-    handle = update.callback_query.data
-    context.user_data['handle'] = handle
-    context.user_data['group'] = handle_groups[handle]
+    avatar = update.callback_query.data
+    context.user_data['avatar'] = avatar
+    context.user_data['group'] = avatar_groups[avatar]
     await context.bot.send_message(chat_id=chat_id, text='Great!')
     await context.bot.send_message(chat_id=chat_id, text=(
         'As a participant in this discussion, you are encouraged to share '
@@ -144,7 +143,7 @@ async def answer_1(update, context):
 async def answer_2(update, context):
     answer = update.message.text.strip()
     if answer.isdigit() and int(answer) >= 0 and int(answer) <= 10:
-        handle = context.user_data['handle']
+        avatar = context.user_data['avatar']
         group = context.user_data['group']
         answer_1 = context.user_data['answer_1']
 
@@ -152,7 +151,7 @@ async def answer_2(update, context):
         path = CSV_FILE_PATH.format(context.user_data['round'])
         with open(path, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow([handle, group, answer_1, answer])
+            writer.writerow([avatar, group, answer_1, answer])
 
             await update.message.reply_text(
                 'Thank you for providing your opinion! '
@@ -213,12 +212,12 @@ async def show_answers(update, context):
                 ]
                 reply_markup = InlineKeyboardMarkup(inline_keyboard)
 
-                handle, group, answer_1, _ = row
+                avatar, group, answer_1, _ = row
 
-                if (handle != context.user_data['handle']
+                if (avatar != context.user_data['avatar']
                         and int(group) == int(context.user_data['group'])):
                     message = (
-                        f'{handle} said {answer_1}\n'
+                        f'{avatar} said {answer_1}\n'
                         'Please provide an evaluation betwee 0 and 10 of '
                         'this opinion and indicate if you would be willing '
                         'to compromise with it:'
@@ -241,7 +240,7 @@ async def handle_button_press(update, context):
     answer = data[2]
 
     # Save the selected values in a separate CSV file
-    h = context.user_data['handle']
+    h = context.user_data['avatar']
     r = context.user_data['round']
     if not os.path.isdir(f'data/round_{r}'):
         subprocess.run(['mkdir', f'data/round_{r}'])
@@ -287,15 +286,15 @@ async def unknown(update, _):
 
 @click.command()
 @click.argument('token')
-@click.argument('participants', type=click.IntRange(0, (len(handle_groups))))
+@click.argument('participants', type=click.IntRange(0, (len(avatar_groups))))
 def main(token, participants):
     app = ApplicationBuilder().token(token).build()
 
     app.add_handler(ConversationHandler(
         entry_points=[CommandHandler('dialoguem', start)],
         states={
-            State.ENTER_HANDLE: [
-                CallbackQueryHandler(enter_handle)
+            State.ENTER_AVATAR: [
+                CallbackQueryHandler(enter_avatar)
             ],
             State.ANSWER_1: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, answer_1)
