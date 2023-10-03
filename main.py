@@ -85,7 +85,6 @@ async def avatar(update, context):
     avatar = update.callback_query.data
     context.user_data['avatar'] = avatar
     context.user_data['group'] = avatar_groups[avatar]
-    await context.bot.send_message(chat_id=chat_id, text='Great!')
     await context.bot.send_message(chat_id=chat_id, text=(
         'As a participant in this discussion, you are encouraged to share '
         'your thoughts on an increasingly important topic: the '
@@ -108,16 +107,15 @@ async def avatar(update, context):
         'potential mental health implications of limiting such '
         'opportunities.\n\n'
         'Please, write a short message describing '
-        'your attitute about the topic.'
+        'your opinion about the topic.'
     ))
     return State.OPINE
 
 
 async def opine(update, context):
     context.user_data['opinion'] = update.message.text.strip()
-    await update.message.reply_text('Okay.')
     await update.message.reply_text(
-        'Now provide an integer number between 0 and 10 '
+        'Okay\\. Now provide an integer number between 0 and 10 '
         'describing your opinion, '
         'where *0 represents* the belief that environmental concerns '
         'are overblown, while *10 indicates* the belief that extreme, '
@@ -265,20 +263,21 @@ async def change(update, context):
     if change:
         await context.bot.send_message(chat_id=chat_id, text=(
             'Okay. Please, write a short message describing '
-            'your attitute about the topic of the assembly.'
+            'your opinion about the topic of the assembly.'
         ))
         return State.OPINE
     else:
-        await context.bot.send_message(chat_id=chat_id, text=(
-            'Okay, you want to keep the same opinion.'
-        ))
-        await update.message.reply_text(
-            'Now provide an integer number between 0 and 10 '
-            'describing your opinion, '
-            'where *0 represents* the belief that environmental concerns '
-            'are overblown, while *10 indicates* the belief that extreme, '
-            'radical changes to our event formats are urgent and '
-            'necessary\\.\n\n',
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=(
+                'Okay, you want to keep the same opinion\\. '
+                'Now provide an integer number between 0 and 10 '
+                'describing your opinion, '
+                'where *0 represents* the belief that environmental concerns '
+                'are overblown, while *10 indicates* the belief that extreme, '
+                'radical changes to our event formats are urgent and '
+                'necessary\\.\n\n'
+            ),
             parse_mode=ParseMode.MARKDOWN_V2
         )
         return State.RATE_OWN
