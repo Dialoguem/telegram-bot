@@ -291,8 +291,7 @@ async def unknown(update, _):
 def main(token, participants):
     app = ApplicationBuilder().token(token).build()
 
-    # Define conversation handler
-    conversation_handler = ConversationHandler(
+    app.add_handler(ConversationHandler(
         entry_points=[CommandHandler('dialoguem', start)],
         states={
             State.ENTER_HANDLE: [
@@ -311,13 +310,8 @@ def main(token, participants):
                 CallbackQueryHandler(handle_button_press)
             ],
         },
-        fallbacks=[]  # Empty list for fallback handlers
-    )
-
-    # Add conversation handler to the dispatcher
-    app.add_handler(conversation_handler)
-
-    # Add unknown command handler
+        fallbacks=[]
+    ))
     app.add_handler(MessageHandler(filters.COMMAND, unknown))
 
     app.run_polling()
