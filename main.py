@@ -1,4 +1,5 @@
 import csv
+import enum
 import logging
 import os.path
 import subprocess
@@ -35,8 +36,11 @@ allowed_handles_group3 = [
     'goat', 'cat', 'turtle', 'sheep', 'frog', 'bee', 'tiger', 'dog',
     'butterfly', 'dolphin', 'snake', 'cow', 'lion', 'bear', 'penguin'
 ]
-# States
-ENTER_HANDLE, ANSWER_1, ANSWER_2, SHOW_ANSWERS, COMPROMISE = range(5)
+
+State = enum.Enum(
+    'State',
+    ['ENTER_HANDLE', 'ANSWER_1', 'ANSWER_2', 'SHOW_ANSWERS', 'COMPROMISE']
+)
 
 
 # Handler for the /start command
@@ -92,7 +96,7 @@ async def start(update, context):
         'way you will be anonymous throughout the process:',
         parse_mode=ParseMode.MARKDOWN_V2
     )
-    return ENTER_HANDLE
+    return State.ENTER_HANDLE
 
 
 # Handler for handling user's handle
@@ -105,7 +109,7 @@ async def enter_handle(update, context):
             'Great! Please, write a short message describing '
             'your attitute about the theme of the assembly. xxx:'
         )
-        return ANSWER_1
+        return State.ANSWER_1
     elif handle in allowed_handles_group2:
         context.user_data['handle'] = handle
         context.user_data['group'] = 2
@@ -113,7 +117,7 @@ async def enter_handle(update, context):
             'Great! Please, write a short message describing '
             'your attitute about the theme of the assembly. xxx:'
         )
-        return ANSWER_1
+        return State.ANSWER_1
     elif handle in allowed_handles_group3:
         context.user_data['handle'] = handle
         context.user_data['group'] = 3
@@ -121,13 +125,13 @@ async def enter_handle(update, context):
             'Great! Please, write a short message describing '
             'your attitute about the theme of the assembly. xxx:'
         )
-        return ANSWER_1
+        return State.ANSWER_1
     else:
         await update.message.reply_text(
             'Sorry, the avatar you have entered is not valid. '
             'Please enter a valid avatar:'
         )
-        return ENTER_HANDLE
+        return State.ENTER_HANDLE
 
 
 # Handler for handling user's first answer
@@ -141,7 +145,7 @@ async def answer_1(update, context):
             'describing your opinion, '
             'where 0 is completely against and 10 completely in favor:'
         )
-        return ANSWER_2
+        return State.ANSWER_2
     else:
         answer = update.message.text.strip()
         context.user_data['answer_1'] = answer
@@ -150,7 +154,7 @@ async def answer_1(update, context):
             'describing your opinion, '
             'where 0 is completely against and 10 completely in favor:'
         )
-        return ANSWER_2
+        return State.ANSWER_2
 
 
 # Handler for handling user's second answer
@@ -173,13 +177,13 @@ async def answer_2(update, context):
                 'will be shown anonymously to the rest of the assembly. '
                 'Now please await instructions from the human facilitators.'
             )
-            return SHOW_ANSWERS
+            return State.SHOW_ANSWERS
     else:
         await update.message.reply_text(
             'Sorry, it should be an integer between 0 and 10, '
             'where 0 is completely against and 10 completely in favor:'
         )
-        return ANSWER_2
+        return State.ANSWER_2
 
 
 # Handler for the /show_answers command
@@ -196,7 +200,7 @@ async def show_answers(update, context):
     if num_lines < participants:
         message = 'Please wait, the opinions will be available soon.'
         await context.bot.send_message(chat_id=chat_id, text=message)
-        return SHOW_ANSWERS
+        return State.SHOW_ANSWERS
     else:
         with open(path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
@@ -240,7 +244,7 @@ async def show_answers(update, context):
                         chat_id=chat_id, text=message,
                         reply_markup=reply_markup
                     )
-        return COMPROMISE
+        return State.COMPROMISE
 
 
 async def handle_button_press(update, context):
@@ -283,14 +287,14 @@ async def handle_button_press(update, context):
     except FileNotFoundError:
         ans_bool = 0
     if ans_int < participants - 1 or ans_bool < participants - 1:
-        return COMPROMISE
+        return State.COMPROMISE
     else:
         context.user_data['round'] += 1
         await context.bot.send_message(chat_id=update.effective_chat.id, text=(
             'Please update your opinion if you want, '
             'or type "keep the same opinion" if not:'
         ))
-        return ANSWER_1
+        return State.ANSWER_1
 
 
 # Handler for handling unknown commands
@@ -312,19 +316,19 @@ def main(token, participants):
     conversation_handler = ConversationHandler(
         entry_points=[CommandHandler('dialoguem', start)],
         states={
-            ENTER_HANDLE: [
+            State.ENTER_HANDLE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, enter_handle)
             ],
-            ANSWER_1: [
+            State.ANSWER_1: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, answer_1)
             ],
-            ANSWER_2: [
+            State.ANSWER_2: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, answer_2)
             ],
-            SHOW_ANSWERS: [
+            State.SHOW_ANSWERS: [
                 CommandHandler('show_opinions', show_answers)
             ],
-            COMPROMISE: [
+            State.COMPROMISE: [
                 CallbackQueryHandler(handle_button_press)
             ],
         },
