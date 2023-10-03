@@ -260,7 +260,7 @@ async def compromise(update, context):
 async def change(update, context):
     chat_id = update.effective_chat.id
     change = update.callback_query.data
-    if change:
+    if change == 'Yes':
         await context.bot.send_message(chat_id=chat_id, text=(
             'Okay. Please, write a short message describing '
             'your opinion about the topic of the assembly.'
