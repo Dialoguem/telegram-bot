@@ -251,7 +251,7 @@ async def compromise(update, context):
         context.user_data['round'] += 1
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text='Do you want to change your opinion?',
+            text='Do you want to change your opinion and its rating?',
             reply_markup=options_markup(['Yes', 'No'])
         )
         return State.CHANGE
@@ -267,20 +267,7 @@ async def change(update, context):
         ))
         return State.OPINE
     else:
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=(
-                'Okay, you want to keep the same opinion\\. '
-                'Now provide an integer number between 0 and 10 '
-                'describing your opinion, '
-                'where *0 represents* the belief that environmental concerns '
-                'are overblown, while *10 indicates* the belief that extreme, '
-                'radical changes to our event formats are urgent and '
-                'necessary\\.\n\n'
-            ),
-            parse_mode=ParseMode.MARKDOWN_V2
-        )
-        return State.RATE_OWN
+        return await rate_own(update, context)
 
 
 # Handler for handling unknown commands
