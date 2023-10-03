@@ -63,34 +63,10 @@ async def start(update, context):
         'confidential\\.\n\n'
         'If you have any concerns or questions about data usage, please '
         'feel free to contact us\\. We appreciate your participation and '
-        'trust in our research endeavor\\.\n\n'
-        'As a participant in this discussion, you are encouraged to share '
-        'your thoughts on an increasingly important topic: the '
-        'environmental impact of academic events, such as schools and '
-        'conferences\\.\n\n'
-        'On one side of the debate, some may argue that environmental '
-        'concerns are being overemphasized, possibly affecting the '
-        'overall experience of such events\\. They might suggest that '
-        'options like vegetarian meals and wooden utensils are '
-        'unnecessary measures\\.\n\n'
-        'On the other end of the spectrum, some argue for drastic and '
-        'immediate overhaul of our traditional academic event formats, '
-        'advocating for a nearly complete shift to online formats and '
-        'significantly reduced event frequency, emphasizing that if the '
-        "scientific community doesn't take radical steps towards "
-        'environmental responsibility, who will?\n\n'
-        'In the middle, there are also considerations of the '
-        'post\\-pandemic reality and the importance of in\\-person '
-        'networking for early\\-career researchers, as well as the '
-        'potential mental health implications of limiting such '
-        'opportunities\\.\n\n'
-        "We've set up a scale from 0 to 10 for you to express your "
-        'opinion: *0 represents* the belief that environmental concerns '
-        'are overblown, while *10 indicates* the belief that extreme, '
-        'radical changes to our event formats are urgent and '
-        'necessary\\.\n\n'
-        'Remember, this is a spectrum\\. '
-        'All shades of opinion are welcome\\!\n\n'
+        'trust in our research endeavor\\.\n\n',
+        parse_mode=ParseMode.MARKDOWN_V2
+    )
+    await update.message.reply_text(
         'Please enter the *avatar* that has been assigned to you, in this '
         'way you will be anonymous throughout the process:',
         parse_mode=ParseMode.MARKDOWN_V2
@@ -104,9 +80,30 @@ async def enter_handle(update, context):
     if handle in handle_groups:
         context.user_data['handle'] = handle
         context.user_data['group'] = handle_groups[handle]
+        await update.message.reply_text('Great!')
         await update.message.reply_text(
-            'Great! Please, write a short message describing '
-            'your attitute about the theme of the assembly. xxx:'
+            'As a participant in this discussion, you are encouraged to share '
+            'your thoughts on an increasingly important topic: the '
+            'environmental impact of academic events, such as schools and '
+            'conferences.\n\n'
+            'On one side of the debate, some may argue that environmental '
+            'concerns are being overemphasized, possibly affecting the '
+            'overall experience of such events. They might suggest that '
+            'options like vegetarian meals and wooden utensils are '
+            'unnecessary measures.\n\n'
+            'On the other end of the spectrum, some argue for drastic and '
+            'immediate overhaul of our traditional academic event formats, '
+            'advocating for a nearly complete shift to online formats and '
+            'significantly reduced event frequency, emphasizing that if the '
+            "scientific community doesn't take radical steps towards "
+            'environmental responsibility, who will?\n\n'
+            'In the middle, there are also considerations of the '
+            'post-pandemic reality and the importance of in-person '
+            'networking for early-career researchers, as well as the '
+            'potential mental health implications of limiting such '
+            'opportunities.\n\n'
+            'Please, write a short message describing '
+            'your attitute about the topic.'
         )
         return State.ANSWER_1
     else:
@@ -123,24 +120,26 @@ async def answer_1(update, context):
             and 'keep' in update.message.text.lower().strip()
             and 'opinion' in update.message.text.lower().strip()):
         await update.message.reply_text(
-            'Okay, you want to keep the same opinion, '
-            'now provide an integer number between 0 and 10 '
-            'describing your opinion, '
-            'where 0 is completely against and 10 completely in favor:'
+            'Okay, you want to keep the same opinion.'
         )
-        return State.ANSWER_2
     else:
         answer = update.message.text.strip()
         context.user_data['answer_1'] = answer
-        await update.message.reply_text(
-            'Okay, now provide an integer number between 0 and 10 '
-            'describing your opinion, '
-            'where 0 is completely against and 10 completely in favor:'
-        )
-        return State.ANSWER_2
+        await update.message.reply_text('Okay.')
+    await update.message.reply_text(
+        'Now provide an integer number between 0 and 10 '
+        'describing your opinion, '
+        'where *0 represents* the belief that environmental concerns '
+        'are overblown, while *10 indicates* the belief that extreme, '
+        'radical changes to our event formats are urgent and '
+        'necessary\\.\n\n'
+        'Remember, this is a spectrum\\. '
+        'All shades of opinion are welcome\\!\n\n',
+        parse_mode=ParseMode.MARKDOWN_V2
+    )
+    return State.ANSWER_2
 
 
-# Handler for handling user's second answer
 async def answer_2(update, context):
     answer = update.message.text.strip()
     if answer.isdigit() and int(answer) >= 0 and int(answer) <= 10:
