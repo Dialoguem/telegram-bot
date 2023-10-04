@@ -33,7 +33,8 @@ avatar_groups = {
 }
 
 State = enum.Enum('State', [
-    'AVATAR', 'OPINE', 'RATE_OWN', 'SHOW', 'RATE_OTHER', 'COMPROMISE', 'CHANGE'
+    'AVATAR', 'OPINE', 'RATE_OWN', 'SHOW', 'RATE_OTHER', 'COMPROMISE',
+    'CHANGE', 'END'
 ])
 
 
@@ -165,8 +166,22 @@ async def show(update, context):
 
 async def show_next(update, context):
     opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS)
-    opinions = opinions[opinions['round'] == context.user_data['round']]
     opinions = opinions[opinions['group'] == context.user_data['group']]
+
+    r = context.user_data['round']
+    if r > 1:
+        now = sorted(opinions[opinions['round'] == r]['opinion'])
+        past = sorted(opinions[opinions['round'] == r-1]['opinion'])
+        if now == past:
+            await context.bot.send_message(
+                update.effective_chat.id,
+                'Nobody has changed the opinion and, therefore, '
+                'the assembly has finished. '
+                'Thanks for the participation!'
+            )
+            return State.END
+
+    opinions = opinions[opinions['round'] == r]
     opinions = opinions[opinions['avatar'] != context.user_data['avatar']]
     try:
         rated = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS)
@@ -251,7 +266,8 @@ def main(token, participants):
             State.SHOW: [CallbackQueryHandler(show)],
             State.RATE_OTHER: [CallbackQueryHandler(rate_other)],
             State.COMPROMISE: [CallbackQueryHandler(compromise)],
-            State.CHANGE: [CallbackQueryHandler(change)]
+            State.CHANGE: [CallbackQueryHandler(change)],
+            State.END: []
         },
         fallbacks=[]
     ))
