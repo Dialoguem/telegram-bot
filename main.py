@@ -1,6 +1,5 @@
 import csv
 import enum
-import logging
 
 import click
 import pandas as pd
@@ -11,11 +10,6 @@ from telegram.ext import (
 )
 from telegram.constants import ParseMode
 
-
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 
 OWN_OPINIONS = 'data/own_opinions.csv'
 OWN_OPINIONS_COLS = ['round', 'avatar', 'group', 'opinion', 'rating']
