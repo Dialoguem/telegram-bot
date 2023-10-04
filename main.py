@@ -50,10 +50,9 @@ def options_markup(options, options_per_row=None):
 
 
 async def dialoguem(update, context):
-    user = update.message.from_user
     context.user_data['round'] = 1
     await update.message.reply_text(
-        f'Hello, {user.first_name}\\! '
+        f'Hello, {update.message.from_user.first_name}\\! '
         'Welcome to the blind assembly *Dialoguem*\\.\n\n'
         'By participating in this social experiment and using the '
         'associated application, you are giving your informed consent for '
@@ -81,11 +80,11 @@ async def dialoguem(update, context):
 
 
 async def avatar(update, context):
-    chat_id = update.effective_chat.id
     avatar = update.callback_query.data
     context.user_data['avatar'] = avatar
     context.user_data['group'] = avatar_groups[avatar]
-    await context.bot.send_message(chat_id=chat_id, text=(
+    await context.bot.send_message(
+        update.effective_chat.id,
         'As a participant in this discussion, you are encouraged to share '
         'your thoughts on an increasingly important topic: the '
         'environmental impact of academic events, such as schools and '
@@ -108,7 +107,7 @@ async def avatar(update, context):
         'opportunities.\n\n'
         'Please, write a short message describing '
         'your opinion about the topic.'
-    ))
+    )
     return State.OPINE
 
 
@@ -140,12 +139,10 @@ async def rate_own(update, context):
         csv.writer(csvfile).writerow([avatar, group, opinion, rating])
 
     await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=(
-            'Thank you for providing your opinion! '
-            'They have been recorded and '
-            'will be shown anonymously to the rest of the assembly.'
-        ),
+        update.effective_chat.id,
+        'Thank you for providing your opinion! '
+        'They have been recorded and '
+        'will be shown anonymously to the rest of the assembly.',
         reply_markup=options_markup(['Show opinions of other participants'])
     )
     return State.SHOW
@@ -157,8 +154,8 @@ async def show(update, context):
     participants = click.get_current_context().params['participants']
     if opinions < participants:
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text='Opinions are not available yet. Please try again later.',
+            update.effective_chat.id,
+            'Opinions are not available yet. Please try again later.',
             reply_markup=options_markup(['Show opinions'])
         )
         return State.SHOW
@@ -172,40 +169,37 @@ async def show_next(update, context):
     group = context.user_data['group']
     with open(CSV_FILE_PATH.format(round)) as f:
         opinions = f.readlines()
+    opinions = [
+        (a, o) for a, g, o, _ in csv.reader(opinions)
+        if a != avatar and int(g) == group
+    ]
     try:
         with open(f'data/round_{round}/{avatar}.csv') as f:
             rated = len(f.readlines())
     except FileNotFoundError:
         rated = 0
-    opinions = [
-        (a, o) for a, g, o, _ in csv.reader(opinions)
-        if a != avatar and int(g) == group
-    ]
     if rated < len(opinions):
         avatar, opinion = opinions[rated]
         context.user_data['rated'] = avatar
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=(
-                f'{avatar} said:\n\n'
-                f'{opinion}\n\n'
-                'Please provide a rating between 0 and 10 of this opinion:'
-            ),
+            update.effective_chat.id,
+            f'{avatar} said:\n\n'
+            f'{opinion}\n\n'
+            'Please provide a rating between 0 and 10 of this opinion:',
             reply_markup=options_markup(range(11), options_per_row=6)
         )
         return State.RATE_OTHER
     else:
         context.user_data['round'] += 1
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text='Do you want to change your opinion and its rating?',
+            update.effective_chat.id,
+            'Do you want to change your opinion and its rating?',
             reply_markup=options_markup(['Yes', 'No'])
         )
         return State.CHANGE
 
 
 async def rate_other(update, context):
-    chat_id = update.effective_chat.id
     round = context.user_data['round']
     avatar = context.user_data['avatar']
     rated = context.user_data['rated']
@@ -215,8 +209,8 @@ async def rate_other(update, context):
     with open(f'data/round_{round}/{avatar}.csv', 'a') as f:
         csv.writer(f).writerow([rated, rating])
     await context.bot.send_message(
-        chat_id=chat_id,
-        text='Now indicate if you would be willing to compromise with it:',
+        update.effective_chat.id,
+        'Now indicate if you would be willing to compromise with it:',
         reply_markup=options_markup(['Yes', 'No'])
     )
     return State.COMPROMISE
@@ -233,13 +227,12 @@ async def compromise(update, context):
 
 
 async def change(update, context):
-    chat_id = update.effective_chat.id
-    change = update.callback_query.data
-    if change == 'Yes':
-        await context.bot.send_message(chat_id=chat_id, text=(
+    if update.callback_query.data == 'Yes':
+        await context.bot.send_message(
+            update.effective_chat.id,
             'Okay. Please, write a short message describing '
             'your opinion about the topic of the assembly.'
-        ))
+        )
         return State.OPINE
     else:
         return await rate_own(update, context)
