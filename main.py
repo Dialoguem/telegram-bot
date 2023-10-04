@@ -3,12 +3,12 @@ import enum
 
 import click
 import pandas as pd
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler, filters,
-    ConversationHandler, CallbackQueryHandler
-)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
+from telegram.ext import (
+    ApplicationBuilder, CallbackQueryHandler, CommandHandler,
+    ConversationHandler, filters, MessageHandler
+)
 
 
 OWN_OPINIONS = 'data/own_opinions.csv'
