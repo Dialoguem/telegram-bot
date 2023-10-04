@@ -37,7 +37,7 @@ avatar_groups = {
 }
 
 State = enum.Enum('State', [
-    'AVATAR', 'OPINE', 'RATE_OWN', 'SHOW', 'COMPROMISE', 'CHANGE'
+    'AVATAR', 'OPINE', 'RATE_OWN', 'SHOW', 'RATE_OTHER', 'COMPROMISE', 'CHANGE'
 ])
 
 
@@ -150,103 +150,47 @@ async def rate_own(update, context):
 
 
 async def show(update, context):
+    with open(CSV_FILE_PATH.format(context.user_data['round'])) as f:
+        opinions = len(f.readlines())
     participants = click.get_current_context().params['participants']
-    chat_id = update.effective_chat.id
-
-    path = CSV_FILE_PATH.format(context.user_data['round'])
-    with open(path, 'r') as csv_file:
-        num_lines = len(csv_file.readlines())
-
-    if num_lines < participants:
-        message = 'Please wait, the opinions will be available soon.'
-        await context.bot.send_message(chat_id=chat_id, text=message)
+    if opinions < participants:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text='Please wait, the opinions will be available soon.'
+        )
         return State.SHOW
     else:
-        with open(path, 'r') as csv_file:
-            csv_reader = csv.reader(csv_file)
-            for row in csv_reader:
-                inline_keyboard = [
-                    [
-                        InlineKeyboardButton(
-                            str(i), callback_data=f'{row[0]},{row[3]},{i}'
-                        )
-                        for i in range(6)
-                    ],
-                    [
-                        InlineKeyboardButton(
-                            str(i), callback_data=f'{row[0]},{row[3]},{i}'
-                        )
-                        for i in range(6, 11)
-                    ],
-                    [
-                        InlineKeyboardButton(
-                            'Yes', callback_data=f'{row[0]},{row[3]},yes'
-                        ),
-                        InlineKeyboardButton(
-                            'No', callback_data=f'{row[0]},{row[3]},no'
-                        )
-                    ]
-                ]
-                reply_markup = InlineKeyboardMarkup(inline_keyboard)
-
-                avatar, group, answer_1, _ = row
-
-                if (avatar != context.user_data['avatar']
-                        and int(group) == int(context.user_data['group'])):
-                    message = (
-                        f'{avatar} said {answer_1}\n'
-                        'Please provide an evaluation betwee 0 and 10 of '
-                        'this opinion and indicate if you would be willing '
-                        'to compromise with it:'
-                    )
-                    await context.bot.send_message(
-                        chat_id=chat_id, text=message,
-                        reply_markup=reply_markup
-                    )
-        return State.COMPROMISE
+        return await show_next(update, context)
 
 
-async def compromise(update, context):
-    participants = click.get_current_context().params['participants']
-    query = update.callback_query
-    data = query.data.split(',')
-
-    # Extract the data from the callback data
-    column1 = data[0]
-    column2 = data[1]
-    answer = data[2]
-
-    # Save the selected values in a separate CSV file
-    h = context.user_data['avatar']
-    r = context.user_data['round']
-    if not os.path.isdir(f'data/round_{r}'):
-        subprocess.run(['mkdir', f'data/round_{r}'])
-    ans_int = f'data/round_{r}/{h}.csv'
-    ans_bool = f'data/round_{r}/{h}_answer.csv'
-    if answer.isdigit() and int(answer) >= 0 and int(answer) <= 10:
-        with open(ans_int, 'a', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow([column1, column2, answer])
-    elif answer.lower() in ['yes', 'no']:
-        # Save the yes/no answer in a separate CSV file
-        with open(ans_bool, 'a', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow([column1, column2, answer])
-        await query.message.edit_reply_markup(reply_markup=None)
-    # Remove the inline keyboard from the original message
-
+async def show_next(update, context):
+    round = context.user_data['round']
+    avatar = context.user_data['avatar']
+    group = context.user_data['group']
+    with open(CSV_FILE_PATH.format(round)) as f:
+        opinions = f.readlines()
     try:
-        with open(ans_int) as f:
-            ans_int = len(f.readlines())
+        with open(f'data/round_{round}/{avatar}.csv') as f:
+            rated = len(f.readlines())
     except FileNotFoundError:
-        ans_int = 0
-    try:
-        with open(ans_bool) as f:
-            ans_bool = len(f.readlines())
-    except FileNotFoundError:
-        ans_bool = 0
-    if ans_int < participants - 1 or ans_bool < participants - 1:
-        return State.COMPROMISE
+        rated = 0
+    opinions = [
+        (a, o) for a, g, o, _ in csv.reader(opinions)
+        if a != avatar and int(g) == group
+    ]
+    if rated < len(opinions):
+        avatar, opinion = opinions[rated]
+        context.user_data['rated'] = avatar
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=(
+                f'{avatar} said:\n\n'
+                f'{opinion}\n\n'
+                'Please provide a rating between 0 and 10 of this opinion:'
+            ),
+            reply_markup=options_markup(range(11), options_per_row=6)
+        )
+        return State.RATE_OTHER
     else:
         context.user_data['round'] += 1
         await context.bot.send_message(
@@ -255,6 +199,34 @@ async def compromise(update, context):
             reply_markup=options_markup(['Yes', 'No'])
         )
         return State.CHANGE
+
+
+async def rate_other(update, context):
+    chat_id = update.effective_chat.id
+    round = context.user_data['round']
+    avatar = context.user_data['avatar']
+    rated = context.user_data['rated']
+    rating = update.callback_query.data
+    if not os.path.isdir(f'data/round_{round}'):
+        subprocess.run(['mkdir', f'data/round_{round}'])
+    with open(f'data/round_{round}/{avatar}.csv', 'a') as f:
+        csv.writer(f).writerow([rated, rating])
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text='Now indicate if you would be willing to compromise with it:',
+        reply_markup=options_markup(['Yes', 'No'])
+    )
+    return State.COMPROMISE
+
+
+async def compromise(update, context):
+    round = context.user_data['round']
+    avatar = context.user_data['avatar']
+    rated = context.user_data['rated']
+    compromise = update.callback_query.data
+    with open(f'data/round_{round}/{avatar}_answer.csv', 'a') as f:
+        csv.writer(f).writerow([rated, compromise])
+    return await show_next(update, context)
 
 
 async def change(update, context):
@@ -270,7 +242,6 @@ async def change(update, context):
         return await rate_own(update, context)
 
 
-# Handler for handling unknown commands
 async def unknown(update, _):
     await update.message.reply_text("Sorry, I didn't understand that command.")
 
@@ -290,6 +261,7 @@ def main(token, participants):
             ],
             State.RATE_OWN: [CallbackQueryHandler(rate_own)],
             State.SHOW: [CommandHandler('show_opinions', show)],
+            State.RATE_OTHER: [CallbackQueryHandler(rate_other)],
             State.COMPROMISE: [CallbackQueryHandler(compromise)],
             State.CHANGE: [CallbackQueryHandler(change)]
         },
