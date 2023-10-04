@@ -130,7 +130,6 @@ async def opine(update, context):
 
 
 async def rate_own(update, context):
-    chat_id = update.effective_chat.id
     avatar = context.user_data['avatar']
     group = context.user_data['group']
     opinion = context.user_data['opinion']
@@ -140,12 +139,15 @@ async def rate_own(update, context):
     with open(path, 'a') as csvfile:
         csv.writer(csvfile).writerow([avatar, group, opinion, rating])
 
-    await context.bot.send_message(chat_id=chat_id, text=(
-        'Thank you for providing your opinion! '
-        'They have been recorded and '
-        'will be shown anonymously to the rest of the assembly. '
-        'Now please await instructions from the human facilitators.'
-    ))
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=(
+            'Thank you for providing your opinion! '
+            'They have been recorded and '
+            'will be shown anonymously to the rest of the assembly.'
+        ),
+        reply_markup=options_markup(['Show opinions of other participants'])
+    )
     return State.SHOW
 
 
@@ -156,7 +158,8 @@ async def show(update, context):
     if opinions < participants:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text='Please wait, the opinions will be available soon.'
+            text='Opinions are not available yet. Please try again later.',
+            reply_markup=options_markup(['Show opinions'])
         )
         return State.SHOW
     else:
@@ -260,7 +263,7 @@ def main(token, participants):
                 MessageHandler(filters.TEXT & ~filters.COMMAND, opine)
             ],
             State.RATE_OWN: [CallbackQueryHandler(rate_own)],
-            State.SHOW: [CommandHandler('show_opinions', show)],
+            State.SHOW: [CallbackQueryHandler(show)],
             State.RATE_OTHER: [CallbackQueryHandler(rate_other)],
             State.COMPROMISE: [CallbackQueryHandler(compromise)],
             State.CHANGE: [CallbackQueryHandler(change)]
