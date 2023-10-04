@@ -1,10 +1,9 @@
 import csv
 import enum
 import logging
-import os.path
-import subprocess
 
 import click
+import pandas as pd
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, filters,
@@ -18,7 +17,10 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-CSV_FILE_PATH = 'data/answers_round_{0}.csv'
+OWN_OPINIONS = 'data/own_opinions.csv'
+OWN_OPINIONS_COLS = ['round', 'avatar', 'group', 'opinion', 'rating']
+OTHER_OPINIONS = 'data/other_opinions.csv'
+OTHER_OPINIONS_COLS = ['round', 'subject', 'object', 'rating', 'compromise']
 
 avatar_groups = {
     'asparagus': 1, 'artichoke': 1, 'beet': 1, 'broccoli': 1, 'celery': 1,
@@ -129,15 +131,19 @@ async def opine(update, context):
 
 
 async def rate_own(update, context):
-    avatar = context.user_data['avatar']
-    group = context.user_data['group']
-    opinion = context.user_data['opinion']
-    rating = update.callback_query.data
+    context.user_data['rating'] = update.callback_query.data
+    return await save_own(update, context)
 
-    path = CSV_FILE_PATH.format(context.user_data['round'])
-    with open(path, 'a') as csvfile:
-        csv.writer(csvfile).writerow([avatar, group, opinion, rating])
 
+async def save_own(update, context):
+    with open(OWN_OPINIONS, 'a') as f:
+        csv.writer(f).writerow([
+            context.user_data['round'],
+            context.user_data['avatar'],
+            context.user_data['group'],
+            context.user_data['opinion'],
+            context.user_data['rating'],
+        ])
     await context.bot.send_message(
         update.effective_chat.id,
         'Thank you for providing your opinion! '
@@ -149,10 +155,10 @@ async def rate_own(update, context):
 
 
 async def show(update, context):
-    with open(CSV_FILE_PATH.format(context.user_data['round'])) as f:
-        opinions = len(f.readlines())
     participants = click.get_current_context().params['participants']
-    if opinions < participants:
+    opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS)
+    opinions = opinions[opinions['round'] == context.user_data['round']]
+    if len(opinions) < participants:
         await context.bot.send_message(
             update.effective_chat.id,
             'Opinions are not available yet. Please try again later.',
@@ -164,23 +170,20 @@ async def show(update, context):
 
 
 async def show_next(update, context):
-    round = context.user_data['round']
-    avatar = context.user_data['avatar']
-    group = context.user_data['group']
-    with open(CSV_FILE_PATH.format(round)) as f:
-        opinions = f.readlines()
-    opinions = [
-        (a, o) for a, g, o, _ in csv.reader(opinions)
-        if a != avatar and int(g) == group
-    ]
+    opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS)
+    opinions = opinions[opinions['round'] == context.user_data['round']]
+    opinions = opinions[opinions['group'] == context.user_data['group']]
+    opinions = opinions[opinions['avatar'] != context.user_data['avatar']]
     try:
-        with open(f'data/round_{round}/{avatar}.csv') as f:
-            rated = len(f.readlines())
+        rated = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS)
+        rated = rated[rated['round'] == context.user_data['round']]
+        rated = rated[rated['subject'] == context.user_data['avatar']]
+        rated = len(rated)
     except FileNotFoundError:
         rated = 0
     if rated < len(opinions):
-        avatar, opinion = opinions[rated]
-        context.user_data['rated'] = avatar
+        avatar, opinion = opinions.iloc[rated][['avatar', 'opinion']]
+        context.user_data['rated'] = {'avatar': avatar}
         await context.bot.send_message(
             update.effective_chat.id,
             f'{avatar} said:\n\n'
@@ -200,14 +203,7 @@ async def show_next(update, context):
 
 
 async def rate_other(update, context):
-    round = context.user_data['round']
-    avatar = context.user_data['avatar']
-    rated = context.user_data['rated']
-    rating = update.callback_query.data
-    if not os.path.isdir(f'data/round_{round}'):
-        subprocess.run(['mkdir', f'data/round_{round}'])
-    with open(f'data/round_{round}/{avatar}.csv', 'a') as f:
-        csv.writer(f).writerow([rated, rating])
+    context.user_data['rated']['rating'] = update.callback_query.data
     await context.bot.send_message(
         update.effective_chat.id,
         'Now indicate if you would be willing to compromise with it:',
@@ -217,12 +213,14 @@ async def rate_other(update, context):
 
 
 async def compromise(update, context):
-    round = context.user_data['round']
-    avatar = context.user_data['avatar']
-    rated = context.user_data['rated']
-    compromise = update.callback_query.data
-    with open(f'data/round_{round}/{avatar}_answer.csv', 'a') as f:
-        csv.writer(f).writerow([rated, compromise])
+    with open(OTHER_OPINIONS, 'a') as f:
+        csv.writer(f).writerow([
+            context.user_data['round'],
+            context.user_data['avatar'],
+            context.user_data['rated']['avatar'],
+            context.user_data['rated']['rating'],
+            update.callback_query.data
+        ])
     return await show_next(update, context)
 
 
@@ -235,7 +233,7 @@ async def change(update, context):
         )
         return State.OPINE
     else:
-        return await rate_own(update, context)
+        return await save_own(update, context)
 
 
 async def unknown(update, _):
