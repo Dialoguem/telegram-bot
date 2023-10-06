@@ -1,5 +1,6 @@
 import csv
 import enum
+import json
 
 import click
 import pandas as pd
@@ -16,21 +17,7 @@ OWN_OPINIONS_COLS = ['round', 'avatar', 'group', 'opinion', 'rating']
 OTHER_OPINIONS = 'data/other_opinions.csv'
 OTHER_OPINIONS_COLS = ['round', 'subject', 'object', 'rating', 'compromise']
 
-avatar_groups = {
-    'asparagus': 1, 'artichoke': 1, 'beet': 1, 'broccoli': 1, 'celery': 1,
-    'couliflower': 1, 'eggplant': 1, 'garlic': 1, 'green beans': 1,
-    'lettuce': 1, 'onion': 1, 'potato': 1, 'peas': 1, 'pepper': 1,
-    'pumpkin': 1, 'radish': 1, 'squash': 1, 'sweet potato': 1, 'tomato': 1,
-    'turnip': 1,
-    'apple': 2, 'avocado': 2, 'banana': 2, 'blueberry': 2, 'cherry': 2,
-    'coconut': 2, 'grape': 2, 'kiwi': 2, 'lemon': 2, 'mango': 2, 'melon': 2,
-    'orange': 2, 'peach': 2, 'pear': 2, 'pineapple': 2, 'red apple': 2,
-    'strawberry': 2, 'watermelon': 2,
-    'bear': 3, 'bee': 3, 'butterfly': 3, 'cat': 3, 'cow': 3, 'crocodile': 3,
-    'dog': 3, 'dolphin': 3, 'elephant': 3, 'fox': 3, 'frog': 3, 'giraffe': 3,
-    'goat': 3, 'hedgehog': 3, 'lion': 3, 'monkey': 3, 'octopus': 3,
-    'penguin': 3, 'sheep': 3, 'snake': 3, 'tiger': 3, 'turtle': 3
-}
+avatar_groups = dict()
 
 State = enum.Enum('State', [
     'AVATAR', 'OPINE', 'RATE_OWN', 'SHOW', 'RATE_OTHER', 'COMPROMISE',
@@ -150,10 +137,9 @@ async def save_own(update, context):
 
 
 async def show(update, context):
-    participants = click.get_current_context().params['participants']
     opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS)
     opinions = opinions[opinions['round'] == context.user_data['round']]
-    if len(opinions) < participants:
+    if len(opinions) < len(avatar_groups):
         await context.bot.send_message(
             update.effective_chat.id,
             'Opinions are not available yet. Please try again later.',
@@ -251,8 +237,10 @@ async def unknown(update, _):
 
 @click.command()
 @click.argument('token')
-@click.argument('participants', type=click.IntRange(0, (len(avatar_groups))))
-def main(token, participants):
+@click.argument('avatars', type=click.File())
+def main(token, avatars):
+    global avatar_groups
+    avatar_groups = {k: i for i, d in enumerate(json.load(avatars)) for k in d}
     app = ApplicationBuilder().token(token).build()
 
     app.add_handler(ConversationHandler(
