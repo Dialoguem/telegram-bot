@@ -23,7 +23,7 @@ OWN_OPINIONS_COLS = ['round', 'avatar', 'group', 'opinion', 'rating']
 OTHER_OPINIONS = 'data/other_opinions.csv'
 OTHER_OPINIONS_COLS = ['round', 'subject', 'object', 'rating', 'compromise']
 
-avatar_groups = dict()
+config = dict()
 
 State = enum.Enum('State', [
     'AVATAR', 'OPINE', 'RATE_OWN', 'SHOW', 'RATE_OTHER', 'COMPROMISE',
@@ -70,31 +70,15 @@ async def start(update, context):
 
 async def avatar(update, context):
     avatar = update.message.text.lower().strip()
-    if avatar in avatar_groups:
+    if avatar in config['groups']:
         context.user_data['avatar'] = avatar
-        context.user_data['group'] = avatar_groups[avatar]
+        context.user_data['group'] = config['groups'][avatar]
         await context.bot.send_message(
             update.effective_chat.id,
             'As a participant in this discussion, you are encouraged to share '
-            'your thoughts on an increasingly important topic: the '
-            'environmental impact of academic events, such as schools and '
-            'conferences.\n\n'
-            'On one side of the debate, some may argue that environmental '
-            'concerns are being overemphasized, possibly affecting the '
-            'overall experience of such events. They might suggest that '
-            'options like vegetarian meals and wooden utensils are '
-            'unnecessary measures.\n\n'
-            'On the other end of the spectrum, some argue for drastic and '
-            'immediate overhaul of our traditional academic event formats, '
-            'advocating for a nearly complete shift to online formats and '
-            'significantly reduced event frequency, emphasizing that if the '
-            "scientific community doesn't take radical steps towards "
-            'environmental responsibility, who will?\n\n'
-            'In the middle, there are also considerations of the '
-            'post-pandemic reality and the importance of in-person '
-            'networking for early-career researchers, as well as the '
-            'potential mental health implications of limiting such '
-            'opportunities.\n\n'
+            'your thoughts on an increasingly important topic: '
+            f'{config["title"]}\n\n'
+            f'{config["description"]}\n\n'
             'Please, write a short message describing '
             'your opinion about the topic.'
         )
@@ -111,15 +95,11 @@ async def avatar(update, context):
 async def opine(update, context):
     context.user_data['opinion'] = update.message.text.strip()
     await update.message.reply_text(
-        'Okay\\. Now provide an integer number between 0 and 10 '
+        'Okay. Now provide an integer number between 0 and 10 '
         'describing your opinion, '
-        'where *0 represents* the belief that environmental concerns '
-        'are overblown, while *10 indicates* the belief that extreme, '
-        'radical changes to our event formats are urgent and '
-        'necessary\\.\n\n'
-        'Remember, this is a spectrum\\. '
-        'All shades of opinion are welcome\\!\n\n',
-        parse_mode=ParseMode.MARKDOWN_V2,
+        f'{config["scale"]}\n\n'
+        'Remember, this is a spectrum. '
+        'All shades of opinion are welcome!\n\n',
         reply_markup=options_markup(range(11), options_per_row=6)
     )
     return State.RATE_OWN
@@ -152,7 +132,7 @@ async def save_own(update, context):
 async def show(update, context):
     opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS)
     opinions = opinions[opinions['round'] == context.user_data['round']]
-    if len(opinions) < len(avatar_groups):
+    if len(opinions) < len(config['groups']):
         await context.bot.send_message(
             update.effective_chat.id,
             'Opinions are not available yet. Please try again later.',
@@ -249,12 +229,16 @@ async def unknown(update, _):
 
 
 @click.command()
-@click.argument('token')
-@click.argument('avatars', type=click.File())
-def main(token, avatars):
-    global avatar_groups
-    avatar_groups = {k: i for i, d in enumerate(json.load(avatars)) for k in d}
-    app = ApplicationBuilder().token(token).build()
+@click.argument('config_file', type=click.File())
+def main(config_file):
+    global config
+    config = json.load(config_file)
+    config['groups'] = {
+        avatar_name: group
+        for group, avatar in enumerate(config['avatars'])
+        for avatar_name in avatar
+    }
+    app = ApplicationBuilder().token(config['token']).build()
 
     app.add_handler(ConversationHandler(
         entry_points=[CommandHandler('start', start)],
