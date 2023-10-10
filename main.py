@@ -239,10 +239,11 @@ def main(config_file):
     global config
     config = json.load(config_file)
     config['groups'] = {
-        avatar_name: group
-        for group, avatar in enumerate(config['avatars'])
-        for avatar_name in avatar
+        avatar: group
+        for group, avatars in enumerate(config['avatars'])
+        for avatar in avatars
     }
+
     app = ApplicationBuilder().token(config['token']).build()
 
     app.add_handler(ConversationHandler(
