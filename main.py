@@ -106,6 +106,7 @@ async def opine(update, context):
 
 
 async def rate_own(update, context):
+    await update.callback_query.edit_message_reply_markup(None)
     context.user_data['rating'] = update.callback_query.data
     return await save_own(update, context)
 
@@ -130,6 +131,7 @@ async def save_own(update, context):
 
 
 async def show(update, context):
+    await update.callback_query.edit_message_reply_markup(None)
     opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS)
     opinions = opinions[opinions['round'] == context.user_data['round']]
     if len(opinions) < len(config['groups']):
@@ -191,6 +193,7 @@ async def show_next(update, context):
 
 
 async def rate_other(update, context):
+    await update.callback_query.edit_message_reply_markup(None)
     context.user_data['rated']['rating'] = update.callback_query.data
     await context.bot.send_message(
         update.effective_chat.id,
@@ -201,6 +204,7 @@ async def rate_other(update, context):
 
 
 async def compromise(update, context):
+    await update.callback_query.edit_message_reply_markup(None)
     with open(OTHER_OPINIONS, 'a') as f:
         csv.writer(f).writerow([
             context.user_data['round'],
@@ -213,6 +217,7 @@ async def compromise(update, context):
 
 
 async def change(update, context):
+    await update.callback_query.edit_message_reply_markup(None)
     if update.callback_query.data == 'Yes':
         await context.bot.send_message(
             update.effective_chat.id,
