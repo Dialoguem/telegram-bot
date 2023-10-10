@@ -1,6 +1,7 @@
 import csv
 import enum
 import json
+import warnings
 
 import click
 import pandas as pd
@@ -10,7 +11,12 @@ from telegram.ext import (
     ApplicationBuilder, CallbackQueryHandler, CommandHandler,
     ConversationHandler, filters, MessageHandler
 )
+from telegram.warnings import PTBUserWarning
 
+
+warnings.filterwarnings(
+    action='ignore', message=r'.*CallbackQueryHandler', category=PTBUserWarning
+)
 
 OWN_OPINIONS = 'data/own_opinions.csv'
 OWN_OPINIONS_COLS = ['round', 'avatar', 'group', 'opinion', 'rating']
