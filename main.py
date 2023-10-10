@@ -33,7 +33,7 @@ def options_markup(options, options_per_row=None):
     return InlineKeyboardMarkup(o)
 
 
-async def dialoguem(update, context):
+async def start(update, context):
     context.user_data['round'] = 1
     await update.message.reply_text(
         f'Hello, {update.message.from_user.first_name}\\! '
@@ -244,7 +244,7 @@ def main(token, avatars):
     app = ApplicationBuilder().token(token).build()
 
     app.add_handler(ConversationHandler(
-        entry_points=[CommandHandler('dialoguem', dialoguem)],
+        entry_points=[CommandHandler('start', start)],
         states={
             State.AVATAR: [CallbackQueryHandler(avatar)],
             State.OPINE: [
