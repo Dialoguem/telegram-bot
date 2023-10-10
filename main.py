@@ -57,42 +57,49 @@ async def start(update, context):
     await update.message.reply_text(
         'Please enter the *avatar* that has been assigned to you, in this '
         'way you will be anonymous throughout the process:',
-        parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=options_markup(avatar_groups.keys(), options_per_row=5)
+        parse_mode=ParseMode.MARKDOWN_V2
     )
     return State.AVATAR
 
 
 async def avatar(update, context):
-    avatar = update.callback_query.data
-    context.user_data['avatar'] = avatar
-    context.user_data['group'] = avatar_groups[avatar]
-    await context.bot.send_message(
-        update.effective_chat.id,
-        'As a participant in this discussion, you are encouraged to share '
-        'your thoughts on an increasingly important topic: the '
-        'environmental impact of academic events, such as schools and '
-        'conferences.\n\n'
-        'On one side of the debate, some may argue that environmental '
-        'concerns are being overemphasized, possibly affecting the '
-        'overall experience of such events. They might suggest that '
-        'options like vegetarian meals and wooden utensils are '
-        'unnecessary measures.\n\n'
-        'On the other end of the spectrum, some argue for drastic and '
-        'immediate overhaul of our traditional academic event formats, '
-        'advocating for a nearly complete shift to online formats and '
-        'significantly reduced event frequency, emphasizing that if the '
-        "scientific community doesn't take radical steps towards "
-        'environmental responsibility, who will?\n\n'
-        'In the middle, there are also considerations of the '
-        'post-pandemic reality and the importance of in-person '
-        'networking for early-career researchers, as well as the '
-        'potential mental health implications of limiting such '
-        'opportunities.\n\n'
-        'Please, write a short message describing '
-        'your opinion about the topic.'
-    )
-    return State.OPINE
+    avatar = update.message.text.lower().strip()
+    if avatar in avatar_groups:
+        context.user_data['avatar'] = avatar
+        context.user_data['group'] = avatar_groups[avatar]
+        await context.bot.send_message(
+            update.effective_chat.id,
+            'As a participant in this discussion, you are encouraged to share '
+            'your thoughts on an increasingly important topic: the '
+            'environmental impact of academic events, such as schools and '
+            'conferences.\n\n'
+            'On one side of the debate, some may argue that environmental '
+            'concerns are being overemphasized, possibly affecting the '
+            'overall experience of such events. They might suggest that '
+            'options like vegetarian meals and wooden utensils are '
+            'unnecessary measures.\n\n'
+            'On the other end of the spectrum, some argue for drastic and '
+            'immediate overhaul of our traditional academic event formats, '
+            'advocating for a nearly complete shift to online formats and '
+            'significantly reduced event frequency, emphasizing that if the '
+            "scientific community doesn't take radical steps towards "
+            'environmental responsibility, who will?\n\n'
+            'In the middle, there are also considerations of the '
+            'post-pandemic reality and the importance of in-person '
+            'networking for early-career researchers, as well as the '
+            'potential mental health implications of limiting such '
+            'opportunities.\n\n'
+            'Please, write a short message describing '
+            'your opinion about the topic.'
+        )
+        return State.OPINE
+    else:
+        await context.bot.send_message(
+            update.effective_chat.id,
+            'Sorry, the avatar you have entered is not valid. '
+            'Please enter a valid avatar:'
+        )
+        return State.AVATAR
 
 
 async def opine(update, context):
@@ -246,7 +253,9 @@ def main(token, avatars):
     app.add_handler(ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            State.AVATAR: [CallbackQueryHandler(avatar)],
+            State.AVATAR: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, avatar)
+            ],
             State.OPINE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, opine)
             ],
