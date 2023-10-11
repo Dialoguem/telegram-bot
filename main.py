@@ -113,7 +113,7 @@ async def rate_own(update, context):
 
 async def save_own(update, context):
     with open(OWN_OPINIONS, 'a') as f:
-        csv.writer(f).writerow([
+        csv.writer(f, delimiter='\t').writerow([
             context.user_data['round'],
             context.user_data['avatar'],
             context.user_data['group'],
@@ -132,7 +132,7 @@ async def save_own(update, context):
 
 async def show(update, context):
     await update.callback_query.edit_message_reply_markup(None)
-    opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS)
+    opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
     opinions = opinions[opinions['round'] == context.user_data['round']]
     if len(opinions) < len(config['groups']):
         await context.bot.send_message(
@@ -146,7 +146,7 @@ async def show(update, context):
 
 
 async def show_next(update, context):
-    opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS)
+    opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
     opinions = opinions[opinions['group'] == context.user_data['group']]
 
     r = context.user_data['round']
@@ -165,7 +165,9 @@ async def show_next(update, context):
     opinions = opinions[opinions['round'] == r]
     opinions = opinions[opinions['avatar'] != context.user_data['avatar']]
     try:
-        rated = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS)
+        rated = pd.read_csv(
+            OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t'
+        )
         rated = rated[rated['round'] == context.user_data['round']]
         rated = rated[rated['subject'] == context.user_data['avatar']]
         rated = len(rated)
@@ -206,7 +208,7 @@ async def rate_other(update, context):
 async def compromise(update, context):
     await update.callback_query.edit_message_reply_markup(None)
     with open(OTHER_OPINIONS, 'a') as f:
-        csv.writer(f).writerow([
+        csv.writer(f, delimiter='\t').writerow([
             context.user_data['round'],
             context.user_data['avatar'],
             context.user_data['rated']['avatar'],

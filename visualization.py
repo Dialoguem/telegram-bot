@@ -40,9 +40,9 @@ def draw_avatars(ax):
 
 
 def get_pivot(round):
-    other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS)
+    other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t')
     other = other[other['round'] == round]
-    own = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS)
+    own = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
     own = own[own['round'] == round].copy()
     own['subject'] = own['avatar']
     own['object'] = own['avatar']
@@ -82,7 +82,7 @@ def main(config_file):
         c = ['tar', '-xz', '--strip=2', 'twemoji-master/assets/72x72']
         subprocess.Popen(c, stdin=p.stdout).communicate()
 
-    other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS)
+    other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t')
     rounds = set(other['round'])
     for r in rounds:
         plot_ratings(r)
