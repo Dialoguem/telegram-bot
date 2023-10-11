@@ -67,7 +67,7 @@ def plot_ratings(round):
     plt.clf()
     ax = sns.heatmap(
         get_pivot(round),
-        cmap=sns.color_palette('YlGnBu', 10),
+        cmap=sns.color_palette('YlGnBu', 11), vmin=0, vmax=10,
         annot=True, cbar=False
     )
     draw_avatars(ax)
@@ -78,7 +78,7 @@ def plot_ratings_diff(round):
     plt.clf()
     ax = sns.heatmap(
         get_pivot_diff(round),
-        cmap=sns.color_palette('coolwarm', 10),
+        cmap=sns.color_palette('coolwarm', 21), vmin=-10, vmax=10,
         annot=True, cbar=False
     )
     draw_avatars(ax)
