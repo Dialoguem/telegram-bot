@@ -48,8 +48,12 @@ def get_pivot(round):
     own = own[own['round'] == round].copy()
     own['subject'] = own['avatar']
     own['object'] = own['avatar']
+    ordre = own.sort_values('rating', ascending=False)['avatar']
     other = pd.concat([own, other])
-    return other.pivot(index='object', columns='subject', values='rating')
+    other = other.pivot(index='object', columns='subject', values='rating')
+    other = other.reindex(ordre, axis=0)
+    other = other.reindex(ordre, axis=1)
+    return other
 
 
 def plot_ratings(round):
