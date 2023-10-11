@@ -6,6 +6,7 @@ import subprocess
 
 import click
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
@@ -56,6 +57,12 @@ def get_pivot(round):
     return other
 
 
+def get_pivot_diff(round):
+    p = get_pivot(round)
+    p = p.sub(np.diag(p), axis=0)
+    return p
+
+
 def plot_ratings(round):
     plt.clf()
     ax = sns.heatmap(
@@ -65,6 +72,17 @@ def plot_ratings(round):
     )
     draw_avatars(ax)
     plt.savefig(f'fig/ratings_{round}.pdf', bbox_inches='tight')
+
+
+def plot_ratings_diff(round):
+    plt.clf()
+    ax = sns.heatmap(
+        get_pivot_diff(round),
+        cmap=sns.color_palette('coolwarm', 10),
+        annot=True, cbar=False
+    )
+    draw_avatars(ax)
+    plt.savefig(f'fig/ratings_diff_{round}.pdf', bbox_inches='tight')
 
 
 def text2img(text):
@@ -93,6 +111,7 @@ def main(config_file):
     rounds = set(other['round'])
     for r in rounds:
         plot_ratings(r)
+        plot_ratings_diff(r)
 
 
 if __name__ == '__main__':
