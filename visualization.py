@@ -57,6 +57,7 @@ def get_pivot(round):
 
 
 def plot_ratings(round):
+    plt.clf()
     ax = sns.heatmap(
         get_pivot(round),
         cmap=sns.color_palette('YlGnBu', 10),
