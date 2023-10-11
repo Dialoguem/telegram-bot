@@ -29,8 +29,8 @@ def draw_avatars(ax):
     ax.xaxis.set_label_position('top')
 
     imgs = [text2img(t.get_text()) for t in ax.xaxis.get_ticklabels()]
-    ax.set_xticklabels([' ' for _ in imgs])
-    ax.set_yticklabels([' ' for _ in imgs])
+    ax.set_xticklabels(['   ' for _ in imgs])
+    ax.set_yticklabels(['   ' for _ in imgs])
 
     size = plt.rcParams['font.size']
     tick = ax.yaxis.get_major_ticks()[0]
