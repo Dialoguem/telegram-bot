@@ -25,64 +25,154 @@ def draw_avatar(ax, im, **kwargs):
     ax.add_artist(a)
 
 
-def draw_avatars(ax):
-    ax.xaxis.set_ticks_position('top')
-    ax.xaxis.set_label_position('top')
+def draw_avatars(ax, x=False, pos=0.0):
+    if x:
+        ax.xaxis.set_ticks_position('top')
+        ax.xaxis.set_label_position('top')
 
-    imgs = [text2img(t.get_text()) for t in ax.xaxis.get_ticklabels()]
-    ax.set_xticklabels(['   ' for _ in imgs])
+    imgs = [text2img(t.get_text()) for t in ax.yaxis.get_ticklabels()]
     ax.set_yticklabels(['   ' for _ in imgs])
+    if x:
+        ax.set_xticklabels(['   ' for _ in imgs])
 
     size = plt.rcParams['font.size']
     tick = ax.yaxis.get_major_ticks()[0]
     pad = tick.get_pad() + tick.get_tick_padding() + size/2
     for i, img in enumerate(imgs):
         img = OffsetImage(img, zoom=size/len(img))
-        draw_avatar(ax, img, xy=(0, i+0.5), xybox=(-pad, 0))
-        draw_avatar(ax, img, xy=(i+0.5, 0), xybox=(0, pad))
+        draw_avatar(ax, img, xy=(0, i+pos), xybox=(-pad, 0))
+        if x:
+            draw_avatar(ax, img, xy=(i+pos, 0), xybox=(0, pad))
 
 
-def get_pivot(round):
-    other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t')
+def get_order(own):
+    own = own[own['round'] == 1]
+    own = own.sort_values('rating', ascending=False)
+    return own['avatar']
+
+
+def get_pivot(own, other, round):
+    order = get_order(own)
     other = other[other['round'] == round]
-    own = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
     own = own[own['round'] == round].copy()
     own['subject'] = own['avatar']
     own['object'] = own['avatar']
-    ordre = own.sort_values('rating', ascending=False)['avatar']
     other = pd.concat([own, other])
     other = other.pivot(index='object', columns='subject', values='rating')
-    other = other.reindex(ordre, axis=0)
-    other = other.reindex(ordre, axis=1)
+    other = other.reindex(order, axis=0)
+    other = other.reindex(order, axis=1)
+    other.index.name = 'object'
+    other.columns.name = 'subject'
     return other
 
 
-def get_pivot_diff(round):
-    p = get_pivot(round)
+def get_pivot_diff(own, other, round):
+    p = get_pivot(own, other, round)
     p = p.sub(np.diag(p), axis=0)
     return p
 
 
-def plot_ratings(round):
+def plot_moves(own, other, round):
+    plt.clf()
+    order = get_order(own)
+
+    r1 = other[other['round'] == round-1]
+    r2 = other[other['round'] == round]
+    mean1 = r1[['rating', 'object']].groupby('object').mean()
+    mean2 = r2[['rating', 'object']].groupby('object').mean()
+    mean1 = mean1.reindex(order, axis=0)
+    mean2 = mean2.reindex(order, axis=0)
+    ax = sns.stripplot(
+        data=mean1, x='rating', y='avatar', color='black',
+        label='Own opinion'
+    )
+    for i, (m1, m2) in enumerate(zip(mean1['rating'], mean2['rating'])):
+        if not np.isnan(m1) and not np.isnan(m2) and m2 != m1:
+            absmax = max((mean2['rating']-mean1['rating']).dropna().apply(abs))
+            color = 0.2 + 0.8*abs(m2-m1)/absmax
+            color = (1-color, 1-color, 1) if m2 > m1 else (1, 1-color, 1-color)
+            plt.arrow(
+                m1, i, m2-m1, 0, ec=color,
+                linewidth=2, head_width=0.1, head_length=0.05
+            )
+    plt.scatter(
+        [], [], marker=r'$\leftarrow$', color='red', s=100,
+        label='Own opinion change to the left'
+    )
+    plt.scatter(
+        [], [], marker=r'$\rightarrow$', color='blue', s=100,
+        label='Own opinion change to the right'
+    )
+
+    mask = pd.DataFrame({a: mean1['rating'] for a in order}, index=order)
+    compr = r1.pivot(index='object', columns='subject', values='compromise')
+    compr = mask.mask(compr != 'Yes')
+    compr = compr.stack().reset_index()
+    compr.columns = ['object', 'subject', 'rating']
+    sns.stripplot(
+        data=compr, x='rating', y='subject',
+        color='black', marker='x', linewidth=0.5, size=4, jitter=False,
+        label='Compromiseble opinion'
+    )
+
+    compr = compr[['rating', 'subject']].groupby('subject').mean()
+    compr = compr.reindex(order, axis=0)
+    sns.stripplot(
+        data=compr[compr < mean1], x='rating', y='avatar',
+        color='red', marker='X',
+        label='Mean of compromiseble opinions (if it is on the left)'
+    )
+    sns.stripplot(
+        data=compr[compr > mean1], x='rating', y='avatar',
+        color='blue', marker='X',
+        label='Mean of compromiseble opinions (if it is on the right)'
+    )
+
+    handles, labels = ax.get_legend_handles_labels()
+    handles, labels = zip(*[
+        (h, l) for i, (h, l) in enumerate(zip(handles, labels))
+        if l not in labels[:i]
+    ])
+    plt.legend(handles, labels, bbox_to_anchor=(0.5, -0.1), loc='upper center')
+
+    draw_avatars(ax)
+    plt.grid(axis='y', linestyle='--', linewidth=0.5)
+    plt.xlabel('Mean of ratings given by others')
+    plt.xlim(0, 10)
+    plt.xticks(range(0, 11))
+    plt.savefig(f'fig/moves_{round}.pdf', bbox_inches='tight')
+
+
+def plot_ratings(own, other, round):
     plt.clf()
     ax = sns.heatmap(
-        get_pivot(round),
+        get_pivot(own, other, round),
         cmap=sns.color_palette('YlGnBu', 11), vmin=0, vmax=10,
         annot=True, cbar=False
     )
-    draw_avatars(ax)
+    draw_avatars(ax, x=True, pos=0.5)
     plt.savefig(f'fig/ratings_{round}.pdf', bbox_inches='tight')
 
 
-def plot_ratings_diff(round):
+def plot_ratings_diff(own, other, round):
     plt.clf()
     ax = sns.heatmap(
-        get_pivot_diff(round),
+        get_pivot_diff(own, other, round),
         cmap=sns.color_palette('coolwarm', 21), vmin=-10, vmax=10,
         annot=True, cbar=False
     )
-    draw_avatars(ax)
+    draw_avatars(ax, x=True, pos=0.5)
     plt.savefig(f'fig/ratings_diff_{round}.pdf', bbox_inches='tight')
+
+
+def plot_round(round):
+    own = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
+    other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t')
+
+    plot_ratings(own, other, round)
+    plot_ratings_diff(own, other, round)
+    if round > 1:
+        plot_moves(own, other, round)
 
 
 def text2img(text):
@@ -110,8 +200,7 @@ def main(config_file):
     other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t')
     rounds = set(other['round'])
     for r in rounds:
-        plot_ratings(r)
-        plot_ratings_diff(r)
+        plot_round(r)
 
 
 if __name__ == '__main__':
