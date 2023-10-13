@@ -20,20 +20,19 @@ OTHER_OPINIONS_COLS = ['round', 'subject', 'object', 'rating', 'compromise']
 config = dict()
 
 
-def arrowplot(xs1, xs2, compr, xcompr, order):
-    xs1 = xs1.reindex(order)
-    xs2 = xs2.reindex(order)
+def arrowplot(own1, own2, compr, order):
+    plt.clf()
     ax = sns.stripplot(
-        data=xs1, x='rating', y='avatar', color='black',
+        data=own1, x='rating', y='avatar', color='black',
         label='Own opinion'
     )
-    for i, (x1, x2) in enumerate(zip(xs1['rating'], xs2['rating'])):
-        if not np.isnan(x1) and not np.isnan(x2) and x2 != x1:
-            absmax = max((xs2['rating']-xs1['rating']).dropna().apply(abs))
-            color = 0.2 + 0.8*abs(x2-x1)/absmax
-            color = (1-color, 1-color, 1) if x2 > x1 else (1, 1-color, 1-color)
+    for i, (o1, o2) in enumerate(zip(own1['rating'], own2['rating'])):
+        if not np.isnan(o1) and not np.isnan(o2) and o2 != o1:
+            absmax = max((own2['rating']-own1['rating']).dropna().apply(abs))
+            color = 0.2 + 0.8*abs(o2-o1)/absmax
+            color = (1-color, 1-color, 1) if o2 > o1 else (1, 1-color, 1-color)
             plt.arrow(
-                x1, i, x2-x1, 0, ec=color,
+                o1, i, o2-o1, 0, ec=color,
                 linewidth=2, head_width=0.1, head_length=0.05
             )
     plt.scatter(
@@ -45,10 +44,6 @@ def arrowplot(xs1, xs2, compr, xcompr, order):
         label='Own opinion change to the right'
     )
 
-    compr = compr.pivot(index='object', columns='subject', values='compromise')
-    compr = xcompr.mask(compr != 'Yes')
-    compr = compr.stack().reset_index()
-    compr.columns = ['object', 'subject', 'rating']
     sns.stripplot(
         data=compr, x='rating', y='subject',
         color='black', marker='x', linewidth=0.5, size=4, jitter=False,
@@ -58,12 +53,12 @@ def arrowplot(xs1, xs2, compr, xcompr, order):
     compr = compr[['rating', 'subject']].groupby('subject').mean()
     compr = compr.reindex(order)
     sns.stripplot(
-        data=compr[compr < xs1], x='rating', y='avatar',
+        data=compr[compr < own1], x='rating', y='avatar',
         color='red', marker='X',
         label='Mean of compromiseble opinions (if it is on the left)'
     )
     sns.stripplot(
-        data=compr[compr > xs1], x='rating', y='avatar',
+        data=compr[compr > own1], x='rating', y='avatar',
         color='blue', marker='X',
         label='Mean of compromiseble opinions (if it is on the right)'
     )
@@ -107,65 +102,85 @@ def draw_avatars(ax, x=False, pos=0.0):
             draw_avatar(ax, img, xy=(i+pos, 0), xybox=(0, pad))
 
 
+def get_compr(other, order, round):
+    other = other[other['round'] == round]
+    other = get_pivot(other, 'compromise', order)
+    return other
+
+
+def get_data(round):
+    own = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
+    other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t')
+    order = get_order(own)
+    ratings = get_ratings(own, other, order, round)
+    compr = get_compr(other, order, round)
+    return ratings, compr, order
+
+
+def get_mask(ratings, compr, order):
+    compr = ratings.mask(compr != 'Yes')
+    compr = compr.stack().reset_index()
+    compr.columns = ['object', 'subject', 'rating']
+    ratings = pd.DataFrame({'rating': np.diag(ratings)}, index=order)
+    return ratings, compr
+
+
+def get_mean(ratings, order):
+    ratings = ratings.stack().reset_index()
+    ratings.columns = ['object', 'subject', 'rating']
+    ratings = ratings[['rating', 'object']].groupby('object').mean()
+    ratings.reindex(order)
+    ratings = pd.DataFrame({a: ratings['rating'] for a in order}, index=order)
+    return ratings
+
+
 def get_order(own):
     own = own[own['round'] == 1]
     own = own.sort_values('rating', ascending=False)
     return own['avatar']
 
 
-def get_pivot(own, other, round):
-    order = get_order(own)
+def get_ratings(own, other, order, round):
     other = other[other['round'] == round]
     own = own[own['round'] == round].copy()
     own['subject'] = own['avatar']
     own['object'] = own['avatar']
     other = pd.concat([own, other])
-    other = other.pivot(index='object', columns='subject', values='rating')
-    other = other.reindex(order, axis=0)
-    other = other.reindex(order, axis=1)
-    other.index.name = 'object'
-    other.columns.name = 'subject'
+    other = get_pivot(other, 'rating', order)
     return other
 
 
-def get_pivot_diff(own, other, round):
-    p = get_pivot(own, other, round)
-    p = p.sub(np.diag(p), axis=0)
-    return p
+def get_pivot(x, values, order):
+    x = x.pivot(index='object', columns='subject', values=values)
+    x = x.reindex(order, axis=0)
+    x = x.reindex(order, axis=1)
+    x.index.name = 'object'
+    x.columns.name = 'subject'
+    return x
 
 
-def plot_moves_others(own, other, round):
-    plt.clf()
-    order = get_order(own)
-    r1 = other[other['round'] == round-1]
-    r2 = other[other['round'] == round]
-    mean1 = r1[['rating', 'object']].groupby('object').mean()
-    mean2 = r2[['rating', 'object']].groupby('object').mean()
-    mean1 = mean1.reindex(order)
-    xr1 = pd.DataFrame({a: mean1['rating'] for a in order}, index=order)
-    arrowplot(mean1, mean2, r1, xr1, order)
+def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round):
+    ratings1 = get_mean(ratings1, order)
+    ratings2 = get_mean(ratings2, order)
+    ratings1, compr1 = get_mask(ratings1, compr1, order)
+    ratings2, _ = get_mask(ratings2, compr2, order)
+    arrowplot(ratings1, ratings2, compr1, order)
     plt.xlabel('Mean of ratings given by others')
     plt.savefig(f'fig/moves_others_{round}.pdf', bbox_inches='tight')
 
 
-def plot_moves_own(own, other, round):
-    plt.clf()
-    order = get_order(own)
-    r1 = own[own['round'] == round-1]
-    r2 = own[own['round'] == round]
-    compr = other[other['round'] == round-1]
-    r1 = r1.set_index('avatar')[['rating']]
-    r2 = r2.set_index('avatar')[['rating']]
-    xcompr = compr.pivot(index='object', columns='subject', values='rating')
-    arrowplot(r1, r2, compr, xcompr, order)
+def plot_moves_subjective(ratings1, compr1, ratings2, compr2, order, round):
+    ratings1, compr1 = get_mask(ratings1, compr1, order)
+    ratings2, _ = get_mask(ratings2, compr2, order)
+    arrowplot(ratings1, ratings2, compr1, order)
     plt.xlabel('Rating given by self')
     plt.savefig(f'fig/moves_own_{round}.pdf', bbox_inches='tight')
 
 
-def plot_ratings(own, other, round):
+def plot_ratings(ratings, round):
     plt.clf()
     ax = sns.heatmap(
-        get_pivot(own, other, round),
+        ratings,
         cmap=sns.color_palette('YlGnBu', 11), vmin=0, vmax=10,
         annot=True, cbar=False
     )
@@ -173,10 +188,10 @@ def plot_ratings(own, other, round):
     plt.savefig(f'fig/ratings_{round}.pdf', bbox_inches='tight')
 
 
-def plot_ratings_diff(own, other, round):
+def plot_ratings_diff(ratings, round):
     plt.clf()
     ax = sns.heatmap(
-        get_pivot_diff(own, other, round),
+        ratings.sub(np.diag(ratings), axis=0),
         cmap=sns.color_palette('coolwarm', 21), vmin=-10, vmax=10,
         annot=True, cbar=False
     )
@@ -185,14 +200,14 @@ def plot_ratings_diff(own, other, round):
 
 
 def plot_round(round):
-    own = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
-    other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t')
+    ratings, compr, order = get_data(round)
 
-    plot_ratings(own, other, round)
-    plot_ratings_diff(own, other, round)
+    plot_ratings(ratings, round)
+    plot_ratings_diff(ratings, round)
     if round > 1:
-        plot_moves_own(own, other, round)
-        plot_moves_others(own, other, round)
+        ratings1, compr1, _ = get_data(round-1)
+        plot_moves_subjective(ratings1, compr1, ratings, compr, order, round)
+        plot_moves_mean(ratings1, compr1, ratings, compr, order, round)
 
 
 def text2img(text):
