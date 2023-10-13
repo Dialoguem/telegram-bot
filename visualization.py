@@ -20,6 +20,68 @@ OTHER_OPINIONS_COLS = ['round', 'subject', 'object', 'rating', 'compromise']
 config = dict()
 
 
+def arrowplot(xs1, xs2, compr, xcompr, order):
+    xs1 = xs1.reindex(order)
+    xs2 = xs2.reindex(order)
+    ax = sns.stripplot(
+        data=xs1, x='rating', y='avatar', color='black',
+        label='Own opinion'
+    )
+    for i, (x1, x2) in enumerate(zip(xs1['rating'], xs2['rating'])):
+        if not np.isnan(x1) and not np.isnan(x2) and x2 != x1:
+            absmax = max((xs2['rating']-xs1['rating']).dropna().apply(abs))
+            color = 0.2 + 0.8*abs(x2-x1)/absmax
+            color = (1-color, 1-color, 1) if x2 > x1 else (1, 1-color, 1-color)
+            plt.arrow(
+                x1, i, x2-x1, 0, ec=color,
+                linewidth=2, head_width=0.1, head_length=0.05
+            )
+    plt.scatter(
+        [], [], marker=r'$\leftarrow$', color='red', s=100,
+        label='Own opinion change to the left'
+    )
+    plt.scatter(
+        [], [], marker=r'$\rightarrow$', color='blue', s=100,
+        label='Own opinion change to the right'
+    )
+
+    compr = compr.pivot(index='object', columns='subject', values='compromise')
+    compr = xcompr.mask(compr != 'Yes')
+    compr = compr.stack().reset_index()
+    compr.columns = ['object', 'subject', 'rating']
+    sns.stripplot(
+        data=compr, x='rating', y='subject',
+        color='black', marker='x', linewidth=0.5, size=4, jitter=False,
+        label='Compromiseble opinion'
+    )
+
+    compr = compr[['rating', 'subject']].groupby('subject').mean()
+    compr = compr.reindex(order)
+    sns.stripplot(
+        data=compr[compr < xs1], x='rating', y='avatar',
+        color='red', marker='X',
+        label='Mean of compromiseble opinions (if it is on the left)'
+    )
+    sns.stripplot(
+        data=compr[compr > xs1], x='rating', y='avatar',
+        color='blue', marker='X',
+        label='Mean of compromiseble opinions (if it is on the right)'
+    )
+
+    handles, labels = ax.get_legend_handles_labels()
+    handles, labels = zip(*[
+        (h, l) for i, (h, l) in enumerate(zip(handles, labels))
+        if l not in labels[:i]
+    ])
+    plt.legend(handles, labels, bbox_to_anchor=(0.5, -0.1), loc='upper center')
+
+    draw_avatars(ax)
+    plt.grid(axis='y', linestyle='--', linewidth=0.5)
+    plt.xlim(0, 10)
+    plt.xticks(range(0, 11))
+    plt.ylabel('')
+
+
 def draw_avatar(ax, im, **kwargs):
     a = AnnotationBbox(im, boxcoords='offset points', frameon=False, **kwargs)
     ax.add_artist(a)
@@ -72,75 +134,32 @@ def get_pivot_diff(own, other, round):
     return p
 
 
-def plot_moves(own, other, round):
+def plot_moves_others(own, other, round):
     plt.clf()
     order = get_order(own)
-
     r1 = other[other['round'] == round-1]
     r2 = other[other['round'] == round]
     mean1 = r1[['rating', 'object']].groupby('object').mean()
     mean2 = r2[['rating', 'object']].groupby('object').mean()
-    mean1 = mean1.reindex(order, axis=0)
-    mean2 = mean2.reindex(order, axis=0)
-    ax = sns.stripplot(
-        data=mean1, x='rating', y='avatar', color='black',
-        label='Own opinion'
-    )
-    for i, (m1, m2) in enumerate(zip(mean1['rating'], mean2['rating'])):
-        if not np.isnan(m1) and not np.isnan(m2) and m2 != m1:
-            absmax = max((mean2['rating']-mean1['rating']).dropna().apply(abs))
-            color = 0.2 + 0.8*abs(m2-m1)/absmax
-            color = (1-color, 1-color, 1) if m2 > m1 else (1, 1-color, 1-color)
-            plt.arrow(
-                m1, i, m2-m1, 0, ec=color,
-                linewidth=2, head_width=0.1, head_length=0.05
-            )
-    plt.scatter(
-        [], [], marker=r'$\leftarrow$', color='red', s=100,
-        label='Own opinion change to the left'
-    )
-    plt.scatter(
-        [], [], marker=r'$\rightarrow$', color='blue', s=100,
-        label='Own opinion change to the right'
-    )
-
-    mask = pd.DataFrame({a: mean1['rating'] for a in order}, index=order)
-    compr = r1.pivot(index='object', columns='subject', values='compromise')
-    compr = mask.mask(compr != 'Yes')
-    compr = compr.stack().reset_index()
-    compr.columns = ['object', 'subject', 'rating']
-    sns.stripplot(
-        data=compr, x='rating', y='subject',
-        color='black', marker='x', linewidth=0.5, size=4, jitter=False,
-        label='Compromiseble opinion'
-    )
-
-    compr = compr[['rating', 'subject']].groupby('subject').mean()
-    compr = compr.reindex(order, axis=0)
-    sns.stripplot(
-        data=compr[compr < mean1], x='rating', y='avatar',
-        color='red', marker='X',
-        label='Mean of compromiseble opinions (if it is on the left)'
-    )
-    sns.stripplot(
-        data=compr[compr > mean1], x='rating', y='avatar',
-        color='blue', marker='X',
-        label='Mean of compromiseble opinions (if it is on the right)'
-    )
-
-    handles, labels = ax.get_legend_handles_labels()
-    handles, labels = zip(*[
-        (h, l) for i, (h, l) in enumerate(zip(handles, labels))
-        if l not in labels[:i]
-    ])
-    plt.legend(handles, labels, bbox_to_anchor=(0.5, -0.1), loc='upper center')
-
-    draw_avatars(ax)
-    plt.grid(axis='y', linestyle='--', linewidth=0.5)
+    mean1 = mean1.reindex(order)
+    xr1 = pd.DataFrame({a: mean1['rating'] for a in order}, index=order)
+    arrowplot(mean1, mean2, r1, xr1, order)
     plt.xlabel('Mean of ratings given by others')
-    plt.xlim(0, 10)
-    plt.xticks(range(0, 11))
-    plt.savefig(f'fig/moves_{round}.pdf', bbox_inches='tight')
+    plt.savefig(f'fig/moves_others_{round}.pdf', bbox_inches='tight')
+
+
+def plot_moves_own(own, other, round):
+    plt.clf()
+    order = get_order(own)
+    r1 = own[own['round'] == round-1]
+    r2 = own[own['round'] == round]
+    compr = other[other['round'] == round-1]
+    r1 = r1.set_index('avatar')[['rating']]
+    r2 = r2.set_index('avatar')[['rating']]
+    xcompr = compr.pivot(index='object', columns='subject', values='rating')
+    arrowplot(r1, r2, compr, xcompr, order)
+    plt.xlabel('Rating given by self')
+    plt.savefig(f'fig/moves_own_{round}.pdf', bbox_inches='tight')
 
 
 def plot_ratings(own, other, round):
@@ -172,7 +191,8 @@ def plot_round(round):
     plot_ratings(own, other, round)
     plot_ratings_diff(own, other, round)
     if round > 1:
-        plot_moves(own, other, round)
+        plot_moves_own(own, other, round)
+        plot_moves_others(own, other, round)
 
 
 def text2img(text):
