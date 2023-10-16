@@ -41,8 +41,7 @@ def options_markup(options, options_per_row=None):
     return InlineKeyboardMarkup(o)
 
 
-async def start(update, context):
-    context.user_data['round'] = 1
+async def start(update, _):
     await update.message.reply_text(
         f'Hello, {update.message.from_user.first_name}\\! '
         'Welcome to the blind assembly *Dialoguem*\\.\n\n'
@@ -75,6 +74,23 @@ async def avatar(update, context):
     if avatar in config['groups']:
         context.user_data['avatar'] = avatar
         context.user_data['group'] = config['groups'][avatar]
+
+        try:
+            opinions = pd.read_csv(
+                OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t'
+            )
+            r = opinions[opinions['avatar'] == avatar]['round'].max()
+            if r > 0:
+                opinions = opinions[opinions['avatar'] == avatar]
+                opinions = opinions[opinions['round'] == r]
+                context.user_data['round'] = r
+                context.user_data['opinion'] = opinions['opinion'].iloc[0]
+                context.user_data['rating'] = opinions['rating'].iloc[0]
+                return await show(update, context)
+        except FileNotFoundError:
+            pass
+
+        context.user_data['round'] = 1
         await context.bot.send_message(
             update.effective_chat.id,
             'As a participant in this discussion, you are encouraged to share '
@@ -133,7 +149,8 @@ async def save_own(update, context):
 
 
 async def show(update, context):
-    await update.callback_query.edit_message_reply_markup(None)
+    if update.callback_query is not None:
+        await update.callback_query.edit_message_reply_markup(None)
     opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
     opinions = opinions[opinions['round'] == context.user_data['round']]
     if len(opinions) < len(config['groups']):
