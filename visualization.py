@@ -79,12 +79,12 @@ def arrowplot(own1, own2, compr, order):
 
 
 def egoplot(ratings, compr, avatar):
-    plt.clf()
-    ax = plt.subplot()
     compr = ratings.mask(compr != 'Yes').dropna()
     rating = ratings[avatar]
     mi = min(rating, compr.min()) - 0.5
     ma = max(rating, compr.max()) + 0.5
+    plt.clf()
+    ax = plt.subplot()
     drawn = []
     for a, r in ratings.items():
         if r < ma and r > mi:
@@ -108,11 +108,11 @@ def egoplot(ratings, compr, avatar):
 
 
 def graphplot(ratings, compr):
-    plt.clf()
-    ax = sns.scatterplot(data=ratings, x='rating', y=0, color='white')
     compr = compr.stack().reset_index()
     compr = compr[compr[0] == 'Yes']
     ratings = ratings['rating']
+    plt.clf()
+    ax = plt.subplot()
     for a, r in ratings.items():
         draw_avatar(ax, a, xy=(r, 0), xybox=(0, 0))
     for _, c in compr.iterrows():
@@ -130,6 +130,7 @@ def graphplot(ratings, compr):
             ))
     lim = (ratings.max()-ratings.min()) / 2
     plt.ylim(-lim, lim)
+    plt.xlim(ratings.min()-0.5, ratings.max()+0.5)
     plt.axis('off')
 
 
@@ -183,15 +184,12 @@ def get_mask(ratings, compr, order):
     return ratings, compr
 
 
-def get_mean(ratings, order, matrix=False):
+def get_mean(ratings, order):
     ratings = ratings.stack().reset_index()
     ratings.columns = ['object', 'subject', 'rating']
     ratings = ratings[['rating', 'object']].groupby('object').mean()
     ratings.reindex(order)
-    if matrix:
-        return pd.DataFrame({a: ratings['rating'] for a in order}, index=order)
-    else:
-        return ratings
+    return ratings
 
 
 def get_order(own):
@@ -253,8 +251,10 @@ def plot_graph(ratings, compr, order, round):
 
 
 def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round):
-    ratings1 = get_mean(ratings1, order, matrix=True)
-    ratings2 = get_mean(ratings2, order, matrix=True)
+    ratings1 = get_mean(ratings1, order)
+    ratings2 = get_mean(ratings2, order)
+    ratings1 = pd.DataFrame({a: ratings1['rating'] for a in order}, order)
+    ratings2 = pd.DataFrame({a: ratings2['rating'] for a in order}, order)
     ratings1, compr1 = get_mask(ratings1, compr1, order)
     ratings2, _ = get_mask(ratings2, compr2, order)
     arrowplot(ratings1, ratings2, compr1, order)
