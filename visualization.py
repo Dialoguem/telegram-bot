@@ -90,6 +90,8 @@ def egoplot(ratings, compr, avatar):
         if r < ma and r > mi:
             size = plt.rcParams['font.size']
             height = len([d for d in drawn if d == r]) * size
+            if a != avatar and a not in compr:
+                size /= 2
             draw_avatar(ax, a, size, xy=(r, 0), xybox=(0, height))
             drawn += [r]
     for c in compr:
