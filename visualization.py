@@ -165,8 +165,8 @@ def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round):
     ratings1, compr1 = get_mask(ratings1, compr1, order)
     ratings2, _ = get_mask(ratings2, compr2, order)
     arrowplot(ratings1, ratings2, compr1, order)
-    plt.xlabel('Mean of ratings given by others')
-    plt.savefig(f'fig/moves_others_{round}.pdf', bbox_inches='tight')
+    plt.xlabel('Mean of ratings')
+    plt.savefig(f'fig/moves_mean_{round}.pdf', bbox_inches='tight')
 
 
 def plot_moves_subjective(ratings1, compr1, ratings2, compr2, order, round):
@@ -174,7 +174,7 @@ def plot_moves_subjective(ratings1, compr1, ratings2, compr2, order, round):
     ratings2, _ = get_mask(ratings2, compr2, order)
     arrowplot(ratings1, ratings2, compr1, order)
     plt.xlabel('Rating given by self')
-    plt.savefig(f'fig/moves_own_{round}.pdf', bbox_inches='tight')
+    plt.savefig(f'fig/moves_subj_{round}.pdf', bbox_inches='tight')
 
 
 def plot_ratings(ratings, round):
