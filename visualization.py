@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+from matplotlib.patches import Arc
 
 
 OWN_OPINIONS = 'data/own_opinions.csv'
@@ -77,7 +78,65 @@ def arrowplot(own1, own2, compr, order):
     plt.ylabel('')
 
 
-def draw_avatar(ax, im, **kwargs):
+def egoplot(ratings, compr, avatar):
+    plt.clf()
+    ax = plt.subplot()
+    compr = ratings.mask(compr != 'Yes').dropna()
+    rating = ratings[avatar]
+    mi = min(rating, compr.min()) - 0.5
+    ma = max(rating, compr.max()) + 0.5
+    drawn = []
+    for a, r in ratings.items():
+        if r < ma and r > mi:
+            size = plt.rcParams['font.size']
+            height = len([d for d in drawn if d == r]) * size
+            draw_avatar(ax, a, size, xy=(r, 0), xybox=(0, height))
+            drawn += [r]
+    for c in compr:
+        center = ((rating+c)/2, 0)
+        diameter = abs(c-rating)
+        ax.add_patch(Arc(
+            center, diameter, diameter, theta1=0, theta2=180,
+            linestyle='--', edgecolor='grey'
+        ))
+    plt.xlim(mi, ma)
+    plt.ylim(0, (ma-mi)/2)
+    plt.yticks([])
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+
+def graphplot(ratings, compr):
+    plt.clf()
+    ax = sns.scatterplot(data=ratings, x='rating', y=0, color='white')
+    compr = compr.stack().reset_index()
+    compr = compr[compr[0] == 'Yes']
+    ratings = ratings['rating']
+    for a, r in ratings.items():
+        draw_avatar(ax, a, xy=(r, 0), xybox=(0, 0))
+    for _, c in compr.iterrows():
+        subj = ratings[c['subject']]
+        obj = ratings[c['object']]
+        center = ((subj+obj)/2, 0)
+        diameter = abs(subj-obj)
+        if obj > subj:
+            ax.add_patch(Arc(
+                center, diameter, diameter, theta1=0, theta2=180, color='blue'
+            ))
+        else:
+            ax.add_patch(Arc(
+                center, diameter, diameter, theta1=180, theta2=360, color='red'
+            ))
+    lim = (ratings.max()-ratings.min()) / 2
+    plt.ylim(-lim, lim)
+    plt.axis('off')
+
+
+def draw_avatar(ax, im, size=plt.rcParams['font.size'], **kwargs):
+    im = config['emojis'][im].encode('unicode_escape').decode('utf-8')[-5:]
+    im = plt.imread(f'72x72/{im}.png')
+    im = OffsetImage(im, zoom=size/len(im))
     a = AnnotationBbox(im, boxcoords='offset points', frameon=False, **kwargs)
     ax.add_artist(a)
 
@@ -87,19 +146,18 @@ def draw_avatars(ax, x=False, pos=0.0):
         ax.xaxis.set_ticks_position('top')
         ax.xaxis.set_label_position('top')
 
-    imgs = [text2img(t.get_text()) for t in ax.yaxis.get_ticklabels()]
-    ax.set_yticklabels(['   ' for _ in imgs])
+    ticks = [t.get_text() for t in ax.yaxis.get_ticklabels()]
+    ax.set_yticklabels(['   ' for _ in ticks])
     if x:
-        ax.set_xticklabels(['   ' for _ in imgs])
+        ax.set_xticklabels(['   ' for _ in ticks])
 
     size = plt.rcParams['font.size']
     tick = ax.yaxis.get_major_ticks()[0]
     pad = tick.get_pad() + tick.get_tick_padding() + size/2
-    for i, img in enumerate(imgs):
-        img = OffsetImage(img, zoom=size/len(img))
-        draw_avatar(ax, img, xy=(0, i+pos), xybox=(-pad, 0))
+    for i, t in enumerate(ticks):
+        draw_avatar(ax, t, size, xy=(0, i+pos), xybox=(-pad, 0))
         if x:
-            draw_avatar(ax, img, xy=(i+pos, 0), xybox=(0, pad))
+            draw_avatar(ax, t, size, xy=(i+pos, 0), xybox=(0, pad))
 
 
 def get_compr(other, order, round):
@@ -125,13 +183,15 @@ def get_mask(ratings, compr, order):
     return ratings, compr
 
 
-def get_mean(ratings, order):
+def get_mean(ratings, order, matrix=False):
     ratings = ratings.stack().reset_index()
     ratings.columns = ['object', 'subject', 'rating']
     ratings = ratings[['rating', 'object']].groupby('object').mean()
     ratings.reindex(order)
-    ratings = pd.DataFrame({a: ratings['rating'] for a in order}, index=order)
-    return ratings
+    if matrix:
+        return pd.DataFrame({a: ratings['rating'] for a in order}, index=order)
+    else:
+        return ratings
 
 
 def get_order(own):
@@ -159,9 +219,42 @@ def get_pivot(x, values, order):
     return x
 
 
+def plot_egonet_mean(ratings, compr, order, round, avatar):
+    try:
+        ratings = get_mean(ratings, order)['rating']
+        compr = compr[avatar]
+        egoplot(ratings, compr, avatar)
+        plt.xlabel('Mean of ratings')
+        plt.savefig(
+            f'fig/egonet_mean_{round}_{avatar}.pdf', bbox_inches='tight'
+        )
+    except (ValueError, KeyError):
+        return
+
+
+def plot_egonet_subjective(ratings, compr, round, avatar):
+    try:
+        ratings = ratings[avatar]
+        compr = compr[avatar]
+        egoplot(ratings, compr, avatar)
+        plt.xlabel(f'Rating given by {avatar}')
+        plt.savefig(
+            f'fig/egonet_subj_{round}_{avatar}.pdf', bbox_inches='tight'
+        )
+    except (ValueError, KeyError):
+        return
+
+
+def plot_graph(ratings, compr, order, round):
+    ratings = get_mean(ratings, order)
+    graphplot(ratings, compr)
+    plt.xlabel('Mean of ratings')
+    plt.savefig(f'fig/graph_{round}.pdf', bbox_inches='tight')
+
+
 def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round):
-    ratings1 = get_mean(ratings1, order)
-    ratings2 = get_mean(ratings2, order)
+    ratings1 = get_mean(ratings1, order, matrix=True)
+    ratings2 = get_mean(ratings2, order, matrix=True)
     ratings1, compr1 = get_mask(ratings1, compr1, order)
     ratings2, _ = get_mask(ratings2, compr2, order)
     arrowplot(ratings1, ratings2, compr1, order)
@@ -204,15 +297,14 @@ def plot_round(round):
 
     plot_ratings(ratings, round)
     plot_ratings_diff(ratings, round)
+    plot_graph(ratings, compr, order, round)
     if round > 1:
         ratings1, compr1, _ = get_data(round-1)
         plot_moves_subjective(ratings1, compr1, ratings, compr, order, round)
         plot_moves_mean(ratings1, compr1, ratings, compr, order, round)
-
-
-def text2img(text):
-    img = config['emojis'][text].encode('unicode_escape').decode('utf-8')[-5:]
-    return plt.imread(f'72x72/{img}.png')
+    for avatar in config['emojis']:
+        plot_egonet_subjective(ratings, compr, round, avatar)
+        plot_egonet_mean(ratings, compr, order, round, avatar)
 
 
 @click.command()
