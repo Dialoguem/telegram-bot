@@ -224,7 +224,8 @@ def plot_egonet_mean(ratings, compr, order, round, avatar):
         egoplot(ratings, compr, avatar)
         plt.xlabel('Mean of ratings')
         plt.savefig(
-            f'fig/egonet_mean_{round}_{avatar}.pdf', bbox_inches='tight'
+            f'fig/egonet_mean_{round}_{avatar}.pdf',
+            bbox_inches='tight', dpi=1000
         )
     except (ValueError, KeyError):
         return
@@ -237,7 +238,8 @@ def plot_egonet_subjective(ratings, compr, round, avatar):
         egoplot(ratings, compr, avatar)
         plt.xlabel(f'Rating given by {avatar}')
         plt.savefig(
-            f'fig/egonet_subj_{round}_{avatar}.pdf', bbox_inches='tight'
+            f'fig/egonet_subj_{round}_{avatar}.pdf',
+            bbox_inches='tight', dpi=1000
         )
     except (ValueError, KeyError):
         return
@@ -247,7 +249,7 @@ def plot_graph(ratings, compr, order, round):
     ratings = get_mean(ratings, order)
     graphplot(ratings, compr)
     plt.xlabel('Mean of ratings')
-    plt.savefig(f'fig/graph_{round}.pdf', bbox_inches='tight')
+    plt.savefig(f'fig/graph_{round}.pdf', bbox_inches='tight', dpi=1000)
 
 
 def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round):
@@ -259,7 +261,7 @@ def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round):
     ratings2, _ = get_mask(ratings2, compr2, order)
     arrowplot(ratings1, ratings2, compr1, order)
     plt.xlabel('Mean of ratings')
-    plt.savefig(f'fig/moves_mean_{round}.pdf', bbox_inches='tight')
+    plt.savefig(f'fig/moves_mean_{round}.pdf', bbox_inches='tight', dpi=1000)
 
 
 def plot_moves_subjective(ratings1, compr1, ratings2, compr2, order, round):
@@ -267,7 +269,7 @@ def plot_moves_subjective(ratings1, compr1, ratings2, compr2, order, round):
     ratings2, _ = get_mask(ratings2, compr2, order)
     arrowplot(ratings1, ratings2, compr1, order)
     plt.xlabel('Rating given by self')
-    plt.savefig(f'fig/moves_subj_{round}.pdf', bbox_inches='tight')
+    plt.savefig(f'fig/moves_subj_{round}.pdf', bbox_inches='tight', dpi=1000)
 
 
 def plot_ratings(ratings, round):
@@ -278,7 +280,7 @@ def plot_ratings(ratings, round):
         annot=True, cbar=False
     )
     draw_avatars(ax, x=True, pos=0.5)
-    plt.savefig(f'fig/ratings_{round}.pdf', bbox_inches='tight')
+    plt.savefig(f'fig/ratings_{round}.pdf', bbox_inches='tight', dpi=1000)
 
 
 def plot_ratings_diff(ratings, round):
@@ -289,7 +291,7 @@ def plot_ratings_diff(ratings, round):
         annot=True, cbar=False
     )
     draw_avatars(ax, x=True, pos=0.5)
-    plt.savefig(f'fig/ratings_diff_{round}.pdf', bbox_inches='tight')
+    plt.savefig(f'fig/ratings_diff_{round}.pdf', bbox_inches='tight', dpi=1000)
 
 
 def plot_round(round):
