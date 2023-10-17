@@ -60,7 +60,9 @@ async def start(update, _):
         'confidential\\.\n\n'
         'If you have any concerns or questions about data usage, please '
         'feel free to contact us\\. We appreciate your participation and '
-        'trust in our research endeavor\\.\n\n',
+        'trust in our research endeavor\\.\n\n'
+        'The code of this bot can be found at '
+        '[Github](https://github.com/Dialoguem/telegram-bot)\\.\n\n',
         parse_mode=ParseMode.MARKDOWN_V2
     )
     await update.message.reply_text(
