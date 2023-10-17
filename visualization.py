@@ -294,6 +294,7 @@ def plot_ratings(ratings, round, group):
         annot=True, cbar=False
     )
     draw_avatars(ax, x=True, pos=0.5)
+    ax.set_aspect('equal')
     plt.savefig(
         f'fig/ratings_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
     )
@@ -307,6 +308,7 @@ def plot_ratings_diff(ratings, round, group):
         annot=True, cbar=False
     )
     draw_avatars(ax, x=True, pos=0.5)
+    ax.set_aspect('equal')
     plt.savefig(
         f'fig/ratings_diff_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
     )
