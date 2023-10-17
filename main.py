@@ -201,8 +201,8 @@ async def show_next(update, context):
         context.user_data['rated'] = {'avatar': avatar}
         await context.bot.send_message(
             update.effective_chat.id,
-            f'{avatar} said:\n\n'
-            f'{opinion}\n\n'
+            f'{config["emojis"][avatar]} {avatar} said:\n\n'
+            f'"{opinion}"\n\n'
             'Please provide a rating between 0 and 10 of this opinion:',
             reply_markup=options_markup(range(11), options_per_row=6)
         )
@@ -268,6 +268,11 @@ def main(config_file):
         avatar: group
         for group, avatars in enumerate(config['avatars'])
         for avatar in avatars
+    }
+    config['emojis'] = {
+        avatar: emoji
+        for group in config['avatars']
+        for avatar, emoji in group.items()
     }
 
     app = ApplicationBuilder().token(config['token']).build()
