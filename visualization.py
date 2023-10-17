@@ -14,9 +14,11 @@ from matplotlib.patches import Arc
 
 
 OWN_OPINIONS = 'data/own_opinions.csv'
-OWN_OPINIONS_COLS = ['round', 'avatar', 'group', 'opinion', 'rating']
+OWN_OPINIONS_COLS = ['round', 'group', 'avatar', 'opinion', 'rating']
 OTHER_OPINIONS = 'data/other_opinions.csv'
-OTHER_OPINIONS_COLS = ['round', 'subject', 'object', 'rating', 'compromise']
+OTHER_OPINIONS_COLS = [
+    'round', 'group', 'subject', 'object', 'rating', 'compromise'
+]
 
 config = dict()
 
@@ -171,9 +173,11 @@ def get_compr(other, order, round):
     return other
 
 
-def get_data(round):
+def get_data(round, group):
     own = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
     other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t')
+    own = own[own['group'] == group]
+    other = other[other['group'] == group]
     order = get_order(own)
     ratings = get_ratings(own, other, order, round)
     compr = get_compr(other, order, round)
@@ -221,42 +225,44 @@ def get_pivot(x, values, order):
     return x
 
 
-def plot_egonet_mean(ratings, compr, order, round, avatar):
+def plot_egonet_mean(ratings, compr, order, round, group, avatar):
     try:
         ratings = get_mean(ratings, order)['rating']
         compr = compr[avatar]
         egoplot(ratings, compr, avatar)
         plt.xlabel('Mean of ratings')
         plt.savefig(
-            f'fig/egonet_mean_{round}_{avatar}.pdf',
+            f'fig/egonet_mean_{round}_{group}_{avatar}.pdf',
             bbox_inches='tight', dpi=1000
         )
     except (ValueError, KeyError):
         return
 
 
-def plot_egonet_subjective(ratings, compr, round, avatar):
+def plot_egonet_subjective(ratings, compr, round, group, avatar):
     try:
         ratings = ratings[avatar]
         compr = compr[avatar]
         egoplot(ratings, compr, avatar)
         plt.xlabel(f'Rating given by {avatar}')
         plt.savefig(
-            f'fig/egonet_subj_{round}_{avatar}.pdf',
+            f'fig/egonet_subj_{round}_{group}_{avatar}.pdf',
             bbox_inches='tight', dpi=1000
         )
     except (ValueError, KeyError):
         return
 
 
-def plot_graph(ratings, compr, order, round):
+def plot_graph(ratings, compr, order, round, group):
     ratings = get_mean(ratings, order)
     graphplot(ratings, compr)
     plt.xlabel('Mean of ratings')
-    plt.savefig(f'fig/graph_{round}.pdf', bbox_inches='tight', dpi=1000)
+    plt.savefig(
+        f'fig/graph_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
+    )
 
 
-def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round):
+def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round, group):
     ratings1 = get_mean(ratings1, order)
     ratings2 = get_mean(ratings2, order)
     ratings1 = pd.DataFrame({a: ratings1['rating'] for a in order}, order)
@@ -265,18 +271,22 @@ def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round):
     ratings2, _ = get_mask(ratings2, compr2, order)
     arrowplot(ratings1, ratings2, compr1, order)
     plt.xlabel('Mean of ratings')
-    plt.savefig(f'fig/moves_mean_{round}.pdf', bbox_inches='tight', dpi=1000)
+    plt.savefig(
+        f'fig/moves_mean_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
+    )
 
 
-def plot_moves_subjective(ratings1, compr1, ratings2, compr2, order, round):
+def plot_moves_subj(ratings1, compr1, ratings2, compr2, order, round, group):
     ratings1, compr1 = get_mask(ratings1, compr1, order)
     ratings2, _ = get_mask(ratings2, compr2, order)
     arrowplot(ratings1, ratings2, compr1, order)
     plt.xlabel('Rating given by self')
-    plt.savefig(f'fig/moves_subj_{round}.pdf', bbox_inches='tight', dpi=1000)
+    plt.savefig(
+        f'fig/moves_subj_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
+    )
 
 
-def plot_ratings(ratings, round):
+def plot_ratings(ratings, round, group):
     plt.clf()
     ax = sns.heatmap(
         ratings,
@@ -284,10 +294,12 @@ def plot_ratings(ratings, round):
         annot=True, cbar=False
     )
     draw_avatars(ax, x=True, pos=0.5)
-    plt.savefig(f'fig/ratings_{round}.pdf', bbox_inches='tight', dpi=1000)
+    plt.savefig(
+        f'fig/ratings_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
+    )
 
 
-def plot_ratings_diff(ratings, round):
+def plot_ratings_diff(ratings, round, group):
     plt.clf()
     ax = sns.heatmap(
         ratings.sub(np.diag(ratings), axis=0),
@@ -295,22 +307,24 @@ def plot_ratings_diff(ratings, round):
         annot=True, cbar=False
     )
     draw_avatars(ax, x=True, pos=0.5)
-    plt.savefig(f'fig/ratings_diff_{round}.pdf', bbox_inches='tight', dpi=1000)
+    plt.savefig(
+        f'fig/ratings_diff_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
+    )
 
 
-def plot_round(round):
-    ratings, compr, order = get_data(round)
+def plot_round(round, group):
+    ratings, compr, order = get_data(round, group)
 
-    plot_ratings(ratings, round)
-    plot_ratings_diff(ratings, round)
-    plot_graph(ratings, compr, order, round)
+    plot_ratings(ratings, round, group)
+    plot_ratings_diff(ratings, round, group)
+    plot_graph(ratings, compr, order, round, group)
     if round > 1:
-        ratings1, compr1, _ = get_data(round-1)
-        plot_moves_subjective(ratings1, compr1, ratings, compr, order, round)
-        plot_moves_mean(ratings1, compr1, ratings, compr, order, round)
+        ratings1, compr1, _ = get_data(round-1, group)
+        plot_moves_subj(ratings1, compr1, ratings, compr, order, round, group)
+        plot_moves_mean(ratings1, compr1, ratings, compr, order, round, group)
     for avatar in config['emojis']:
-        plot_egonet_subjective(ratings, compr, round, avatar)
-        plot_egonet_mean(ratings, compr, order, round, avatar)
+        plot_egonet_subjective(ratings, compr, round, group, avatar)
+        plot_egonet_mean(ratings, compr, order, round, group, avatar)
 
 
 @click.command()
@@ -332,8 +346,10 @@ def main(config_file):
 
     other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t')
     rounds = set(other['round'])
+    groups = set(other['group'])
     for r in rounds:
-        plot_round(r)
+        for g in groups:
+            plot_round(r, g)
 
 
 if __name__ == '__main__':

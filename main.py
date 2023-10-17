@@ -21,9 +21,11 @@ warnings.filterwarnings(
 )
 
 OWN_OPINIONS = 'data/own_opinions.csv'
-OWN_OPINIONS_COLS = ['round', 'avatar', 'group', 'opinion', 'rating']
+OWN_OPINIONS_COLS = ['round', 'group', 'avatar', 'opinion', 'rating']
 OTHER_OPINIONS = 'data/other_opinions.csv'
-OTHER_OPINIONS_COLS = ['round', 'subject', 'object', 'rating', 'compromise']
+OTHER_OPINIONS_COLS = [
+    'round', 'group', 'subject', 'object', 'rating', 'compromise'
+]
 
 config = dict()
 
@@ -133,8 +135,8 @@ async def save_own(update, context):
     with open(OWN_OPINIONS, 'a') as f:
         csv.writer(f, delimiter='\t').writerow([
             context.user_data['round'],
-            context.user_data['avatar'],
             context.user_data['group'],
+            context.user_data['avatar'],
             context.user_data['opinion'],
             context.user_data['rating'],
         ])
@@ -229,6 +231,7 @@ async def compromise(update, context):
     with open(OTHER_OPINIONS, 'a') as f:
         csv.writer(f, delimiter='\t').writerow([
             context.user_data['round'],
+            context.user_data['group'],
             context.user_data['avatar'],
             context.user_data['rated']['avatar'],
             context.user_data['rated']['rating'],
