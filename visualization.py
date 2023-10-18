@@ -55,13 +55,13 @@ def arrowplot(own1, own2, compr, order):
 
     compr = compr[['rating', 'subject']].groupby('subject').mean()
     compr = compr.reindex(order)
-    if not all(compr[compr < own1].isna()):
+    if not all(compr[compr < own1]['rating'].isna()):
         sns.stripplot(
             data=compr[compr < own1], x='rating', y='avatar',
             color='red', marker='X',
             label='Mean of compromiseble opinions (if it is on the left)'
         )
-    if not all(compr[compr > own1].isna()):
+    if not all(compr[compr > own1]['rating'].isna()):
         sns.stripplot(
             data=compr[compr > own1], x='rating', y='avatar',
             color='blue', marker='X',
