@@ -265,7 +265,7 @@ def main(config_file):
     global config
     config = json.load(config_file)
     config['groups'] = {
-        avatar: group
+        avatar: group + 1
         for group, avatars in enumerate(config['avatars'])
         for avatar in avatars
     }
