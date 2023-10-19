@@ -33,7 +33,10 @@ def arrowplot(own1, own2, compr, order):
         if not np.isnan(o1) and not np.isnan(o2) and o2 != o1:
             absmax = max((own2['rating']-own1['rating']).dropna().apply(abs))
             color = 0.2 + 0.8*abs(o2-o1)/absmax
-            color = (1-color, 1-color, 1) if o2 > o1 else (1, 1-color, 1-color)
+            if o2 > o1:
+                color = (round(1-color, 4), round(1-color, 4), 1)
+            else:
+                color = (1, round(1-color, 4), round(1-color, 4))
             plt.arrow(
                 o1, i, o2-o1, 0, ec=color,
                 linewidth=2, head_width=0.1, head_length=0.05
