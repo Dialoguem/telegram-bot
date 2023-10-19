@@ -231,6 +231,9 @@ async def show_next(update, context):
             update.effective_chat.id,
             f'{config["emojis"][avatar]} {avatar} said:\n\n'
             f'"{opinion}"\n\n'
+        )
+        await context.bot.send_message(
+            update.effective_chat.id,
             'Please provide a rating between 0️⃣ and 🔟 of this opinion\\. '
             'Remember:\n\n'
             f'{scale}\n\n',
