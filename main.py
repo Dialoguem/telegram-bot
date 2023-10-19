@@ -47,7 +47,9 @@ def options_markup(options, options_per_row=None):
 
 def wait(update, context):
     context.job_queue.run_repeating(
-        lambda c: c.bot.send_message(c.job.chat_id, "Don't wait!"),
+        lambda c: c.bot.send_message(
+            c.job.chat_id, "Quick action appreciated! 🚀"
+        ),
         config['seconds_to_answer'],
         chat_id=update.effective_chat.id,
         name=context.user_data['avatar']
