@@ -26,6 +26,8 @@ OTHER_OPINIONS = 'data/other_opinions.csv'
 OTHER_OPINIONS_COLS = [
     'round', 'group', 'subject', 'object', 'rating', 'compromise'
 ]
+AVATARS_FINISHED = 'data/avatars_finished.csv'
+AVATARS_FINISHED_COLS = ['avatar']
 
 config = dict()
 
@@ -157,7 +159,12 @@ async def show(update, context):
         await update.callback_query.edit_message_reply_markup(None)
     opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
     opinions = opinions[opinions['round'] == context.user_data['round']]
-    if len(opinions) < len(config['groups']):
+    try:
+        finished = pd.read_csv(AVATARS_FINISHED, names=AVATARS_FINISHED_COLS)
+        finished = len(set(finished['avatar']))
+    except FileNotFoundError:
+        finished = 0
+    if len(opinions) < len(config['groups']) - finished:
         await context.bot.send_message(
             update.effective_chat.id,
             'Opinions are not available yet. Please try again later.',
@@ -183,6 +190,8 @@ async def show_next(update, context):
                 'the assembly has finished. '
                 'Thanks for the participation!'
             )
+            with open(AVATARS_FINISHED, 'a') as f:
+                csv.writer(f).writerow([context.user_data['avatar']])
             return State.END
 
     opinions = opinions[opinions['round'] == r]
