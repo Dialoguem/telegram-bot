@@ -45,6 +45,15 @@ def options_markup(options, options_per_row=None):
     return InlineKeyboardMarkup(o)
 
 
+def wait(update, context):
+    context.job_queue.run_repeating(
+        lambda c: c.bot.send_message(c.job.chat_id, "Don't wait!"),
+        config['seconds_to_answer'],
+        chat_id=update.effective_chat.id,
+        name=context.user_data['avatar']
+    )
+
+
 async def start(update, _):
     await update.message.reply_text(
         f'Hello, {update.message.from_user.first_name}\\! '
@@ -106,6 +115,7 @@ async def avatar(update, context):
             'Please, write a short message describing '
             'your opinion about the topic.'
         )
+        wait(update, context)
         return State.OPINE
     else:
         await context.bot.send_message(
@@ -117,6 +127,8 @@ async def avatar(update, context):
 
 
 async def opine(update, context):
+    for j in context.job_queue.get_jobs_by_name(context.user_data['avatar']):
+        j.schedule_removal()
     context.user_data['opinion'] = update.message.text.strip()
     await update.message.reply_text(
         'Okay. Now provide an integer number between 0 and 10 '
@@ -259,6 +271,7 @@ async def change(update, context):
             'Okay. Please, write a short message describing '
             'your opinion about the topic of the assembly.'
         )
+        wait(update, context)
         return State.OPINE
     else:
         return await save_own(update, context)
