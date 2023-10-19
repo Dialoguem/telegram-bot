@@ -77,8 +77,8 @@ async def start(update, _):
         parse_mode=ParseMode.MARKDOWN_V2
     )
     await update.message.reply_text(
-        'Please enter the *avatar* that has been assigned to you, in this '
-        'way you will be anonymous throughout the process:',
+        'Please enter the *AVATAR* that has been assigned to you, in this '
+        'way *you will be anonymous* throughout the process:',
         parse_mode=ParseMode.MARKDOWN_V2
     )
     return State.AVATAR
@@ -109,11 +109,14 @@ async def avatar(update, context):
         await context.bot.send_message(
             update.effective_chat.id,
             'As a participant in this discussion, you are encouraged to share '
-            'your thoughts on an increasingly important topic: '
-            f'{config["title"]}\n\n'
+            'your thoughts on an increasingly important topic:\n\n'
+            f'_{config["title"]}_\n\n'
             f'{config["description"]}\n\n'
-            'Please, write a short message describing '
-            'your opinion about the topic.'
+            '👉 Please, *write a short message describing '
+            'your opinion about the topic*\\.\n\n'
+            '✅ *Remember:* '
+            'All shades of opinion and nuanced motivations are welcome\\!',
+            parse_mode=ParseMode.MARKDOWN_V2
         )
         wait(update, context)
         return State.OPINE
@@ -131,11 +134,11 @@ async def opine(update, context):
         j.schedule_removal()
     context.user_data['opinion'] = update.message.text.strip()
     await update.message.reply_text(
-        'Okay. Now provide an integer number between 0 and 10 '
-        'describing your opinion, '
-        f'{config["scale"]}\n\n'
-        'Remember, this is a spectrum. '
-        'All shades of opinion are welcome!\n\n',
+        '👍 Thank you\\!\n\n'
+        'Now provide an *integer number* between 0️⃣ and 🔟 '
+        'describing your opinion, where:\n\n'
+        f'{config["scale_own"]}\n\n',
+        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=options_markup(range(11), options_per_row=6)
     )
     return State.RATE_OWN
@@ -158,8 +161,8 @@ async def save_own(update, context):
         ])
     await context.bot.send_message(
         update.effective_chat.id,
-        'Thank you for providing your opinion! '
-        'They have been recorded and '
+        'Thank you for your input! '
+        'It have been recorded and '
         'will be shown anonymously to the rest of the assembly.',
         reply_markup=options_markup(['Show opinions of other participants'])
     )
@@ -220,11 +223,16 @@ async def show_next(update, context):
     if rated < len(opinions):
         avatar, opinion = opinions.iloc[rated][['avatar', 'opinion']]
         context.user_data['rated'] = {'avatar': avatar}
+        scale = config["scale_other"]
+        scale = scale.replace("{subject}", config['emojis'][avatar])
         await context.bot.send_message(
             update.effective_chat.id,
             f'{config["emojis"][avatar]} {avatar} said:\n\n'
             f'"{opinion}"\n\n'
-            'Please provide a rating between 0 and 10 of this opinion:',
+            'Please provide a rating between 0️⃣ and 🔟 of this opinion\\. '
+            'Remember:\n\n'
+            f'{scale}\n\n',
+            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=options_markup(range(11), options_per_row=6)
         )
         return State.RATE_OTHER
@@ -241,9 +249,11 @@ async def show_next(update, context):
 async def rate_other(update, context):
     await update.callback_query.edit_message_reply_markup(None)
     context.user_data['rated']['rating'] = update.callback_query.data
+    emoji = config['emojis'][context.user_data['rated']['avatar']]
     await context.bot.send_message(
         update.effective_chat.id,
-        'Now indicate if you would be willing to compromise with it:',
+        f'Would you be willing to *compromise* with {emoji}?',
+        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=options_markup(['Yes', 'No'])
     )
     return State.COMPROMISE
