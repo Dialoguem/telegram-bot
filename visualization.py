@@ -382,8 +382,8 @@ def main(config_file):
 
     other = pd.read_csv(OTHER_OPINIONS, names=OTHER_OPINIONS_COLS, sep='\t')
     rounds = set(other['round'])
-    groups = set(other['group'])
     for r in rounds:
+        groups = set(other[other['round'] == r]['group'])
         for g in groups:
             plot_round(r, g)
 
