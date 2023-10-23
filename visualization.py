@@ -88,19 +88,16 @@ def arrowplot(own1, own2, compr, order):
 def egoplot(ratings, compr, avatar):
     compr = ratings.mask(compr != 'Yes').dropna()
     rating = ratings[avatar]
-    mi = min(rating, compr.min()) - 0.5
-    ma = max(rating, compr.max()) + 0.5
     plt.clf()
     ax = plt.subplot()
     drawn = []
     for a, r in ratings.items():
-        if r < ma and r > mi:
-            size = plt.rcParams['font.size']
-            height = len([d for d in drawn if d == r]) * size
-            if a != avatar and a not in compr:
-                size /= 2
-            draw_avatar(ax, a, size, xy=(r, 0), xybox=(0, height))
-            drawn += [r]
+        size = plt.rcParams['font.size']
+        height = len([d for d in drawn if d == r]) * size
+        if a != avatar and a not in compr:
+            size /= 2
+        draw_avatar(ax, a, size, xy=(r, 0), xybox=(0, height))
+        drawn += [r]
     for c in compr:
         center = ((rating+c)/2, 0)
         diameter = abs(c-rating)
@@ -108,6 +105,8 @@ def egoplot(ratings, compr, avatar):
             center, diameter, diameter, theta1=0, theta2=180,
             linestyle='--', edgecolor='grey'
         ))
+    mi = ratings.min() - 0.5
+    ma = ratings.max() + 0.5
     plt.xlim(mi, ma)
     plt.ylim(0, (ma-mi)/2)
     plt.yticks([])
