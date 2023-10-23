@@ -117,7 +117,9 @@ async def avatar(update, context):
             '👉 Please, *write a short message describing '
             'your opinion about the topic*\\.\n\n'
             '✅ *Remember:* '
-            'All shades of opinion and nuanced motivations are welcome\\!',
+            'All shades of opinion and nuanced motivations are welcome\\!\n\n'
+            'ℹ️ I will inform you when the assembly has ended, '
+            'but you can leave at any time by telling me /leave\\.\n\n',
             parse_mode=ParseMode.MARKDOWN_V2
         )
         wait(update, context)
@@ -176,12 +178,13 @@ async def show(update, context):
         await update.callback_query.edit_message_reply_markup(None)
     opinions = pd.read_csv(OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t')
     opinions = opinions[opinions['round'] == context.user_data['round']]
+    opinions = set(opinions['avatar'])
     try:
         finished = pd.read_csv(AVATARS_FINISHED, names=AVATARS_FINISHED_COLS)
-        finished = len(set(finished['avatar']))
+        finished = set(finished['avatar'])
     except FileNotFoundError:
-        finished = 0
-    if len(opinions) < len(config['groups']) - finished:
+        finished = set()
+    if len(opinions | finished) < len(config['groups']):
         await context.bot.send_message(
             update.effective_chat.id,
             'Opinions are not available yet. Please try again later.',
@@ -207,9 +210,7 @@ async def show_next(update, context):
                 'the assembly has finished. '
                 'Thanks for the participation!'
             )
-            with open(AVATARS_FINISHED, 'a') as f:
-                csv.writer(f).writerow([context.user_data['avatar']])
-            return State.END
+            return end(context)
 
     opinions = opinions[opinions['round'] == r]
     opinions = opinions[opinions['avatar'] != context.user_data['avatar']]
@@ -292,6 +293,24 @@ async def change(update, context):
         return await save_own(update, context)
 
 
+async def leave(update, context):
+    for j in context.job_queue.get_jobs_by_name(context.user_data['avatar']):
+        j.schedule_removal()
+    if update.callback_query is not None:
+        await update.callback_query.edit_message_reply_markup(None)
+    await update.message.reply_text(
+        'Okay, you have left the assembly. '
+        'Thanks for the participation!'
+    )
+    return end(context)
+
+
+def end(context):
+    with open(AVATARS_FINISHED, 'a') as f:
+        csv.writer(f).writerow([context.user_data['avatar']])
+    return State.END
+
+
 async def unknown(update, _):
     await update.message.reply_text("Sorry, I didn't understand that command.")
 
@@ -321,13 +340,29 @@ def main(config_file):
                 MessageHandler(filters.TEXT & ~filters.COMMAND, avatar)
             ],
             State.OPINE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, opine)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, opine),
+                CommandHandler('leave', leave)
             ],
-            State.RATE_OWN: [CallbackQueryHandler(rate_own)],
-            State.SHOW: [CallbackQueryHandler(show)],
-            State.RATE_OTHER: [CallbackQueryHandler(rate_other)],
-            State.COMPROMISE: [CallbackQueryHandler(compromise)],
-            State.CHANGE: [CallbackQueryHandler(change)],
+            State.RATE_OWN: [
+                CallbackQueryHandler(rate_own),
+                CommandHandler('leave', leave)
+            ],
+            State.SHOW: [
+                CallbackQueryHandler(show),
+                CommandHandler('leave', leave)
+            ],
+            State.RATE_OTHER: [
+                CallbackQueryHandler(rate_other),
+                CommandHandler('leave', leave)
+            ],
+            State.COMPROMISE: [
+                CallbackQueryHandler(compromise),
+                CommandHandler('leave', leave)
+            ],
+            State.CHANGE: [
+                CallbackQueryHandler(change),
+                CommandHandler('leave', leave)
+            ],
             State.END: []
         },
         fallbacks=[]
