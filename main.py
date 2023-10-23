@@ -155,6 +155,14 @@ async def rate_own(update, context):
 
 
 async def save_own(update, context):
+    finished = pd.read_csv(AVATARS_FINISHED, names=AVATARS_FINISHED_COLS)
+    if context.user_data['avatar'] in set(finished['avatar']):
+        await context.bot.send_message(
+            update.effective_chat.id,
+            'The assembly has finished for you. '
+            'Thanks for the participation!'
+        )
+        return State.END
     with open(OWN_OPINIONS, 'a') as f:
         csv.writer(f, delimiter='\t').writerow([
             context.user_data['round'],

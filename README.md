@@ -36,3 +36,20 @@ La primera perquè l'usuari puntuï la seva opinió.
 La segona perquè l'usuari puntuï una opinió aliena.
 En aquest últim cas, es pot escriure `{subject}`
 allà on es vulgui posar l'emoji de l'usuari que ha escrit l'opinió.
+
+En cas que un usuari vulgui anar-se'n de l'assemblea, pot escriure `\leave`.
+Ara bé, si se'n va sense escriure-ho i, senzillament, deixa de respondre,
+la resta d'usuaris no podran acabar perquè el bot l'esperarà.
+En aquest cas, convindria expulsar l'usuari que ja no respon.
+Si el seu avatar és _avatar_, es pot expulsar així:
+
+```sh
+./expel.py avatar
+```
+
+Finalment, per generar diverses visualitzacions amb les dades generades,
+es pot fer:
+
+```sh
+./visualization.py config.json
+```
