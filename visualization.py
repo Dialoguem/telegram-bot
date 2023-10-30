@@ -247,10 +247,7 @@ def plot_egonet_mean(ratings, compr, order, round, group, avatar):
             'with non compromisable opinions depicted smaller'
         )
         plt.xlabel('Mean of ratings')
-        plt.savefig(
-            f'fig/egonet_mean_{round}_{group}_{avatar}.pdf',
-            bbox_inches='tight', dpi=1000
-        )
+        savefig(f'egonet_mean_{round}_{group}_{avatar}')
     except (ValueError, KeyError):
         return
 
@@ -266,10 +263,7 @@ def plot_egonet_subjective(ratings, compr, round, group, avatar):
             'with non compromisable opinions depicted smaller'
         )
         plt.xlabel(f'Rating given by {avatar}')
-        plt.savefig(
-            f'fig/egonet_subj_{round}_{group}_{avatar}.pdf',
-            bbox_inches='tight', dpi=1000
-        )
+        savefig(f'egonet_subj_{round}_{group}_{avatar}')
     except (ValueError, KeyError):
         return
 
@@ -278,9 +272,7 @@ def plot_graph(ratings, compr, order, round, group):
     ratings = get_mean(ratings, order)
     graphplot(ratings, compr)
     plt.title(f'Graph of compromises (round {round}, group {group})')
-    plt.savefig(
-        f'fig/graph_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
-    )
+    savefig(f'graph_{round}_{group}')
 
 
 def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round, group):
@@ -293,9 +285,7 @@ def plot_moves_mean(ratings1, compr1, ratings2, compr2, order, round, group):
     arrowplot(ratings1, ratings2, compr1, order)
     plt.title(f'Opinion movements (rounds {round-1}-{round}, group {group})')
     plt.xlabel('Mean of ratings')
-    plt.savefig(
-        f'fig/moves_mean_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
-    )
+    savefig(f'moves_mean_{round}_{group}')
 
 
 def plot_moves_subj(ratings1, compr1, ratings2, compr2, order, round, group):
@@ -305,9 +295,7 @@ def plot_moves_subj(ratings1, compr1, ratings2, compr2, order, round, group):
     plt.title(f'Opinion movements (rounds {round-1}-{round}, group {group})')
     plt.xlabel('Rating given by avatar')
     plt.ylabel('Avatar')
-    plt.savefig(
-        f'fig/moves_subj_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
-    )
+    savefig(f'moves_subj_{round}_{group}')
 
 
 def plot_ratings(ratings, round, group):
@@ -323,9 +311,7 @@ def plot_ratings(ratings, round, group):
         "Rating of object's opinion given by subject\n"
         f'(round {round}, group {group})'
     )
-    plt.savefig(
-        f'fig/ratings_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
-    )
+    savefig(f'ratings_{round}_{group}')
 
 
 def plot_ratings_diff(ratings, round, group):
@@ -342,9 +328,7 @@ def plot_ratings_diff(ratings, round, group):
         f'(round {round}, group {group})'
     )
     ax.set_aspect('equal')
-    plt.savefig(
-        f'fig/ratings_diff_{round}_{group}.pdf', bbox_inches='tight', dpi=1000
-    )
+    savefig(f'ratings_diff_{round}_{group}')
 
 
 def plot_round(round, group):
@@ -360,6 +344,11 @@ def plot_round(round, group):
     for avatar in config['emojis']:
         plot_egonet_subjective(ratings, compr, round, group, avatar)
         plot_egonet_mean(ratings, compr, order, round, group, avatar)
+
+
+def savefig(name):
+    plt.savefig(f'fig/{name}.pdf', bbox_inches='tight', dpi=1000)
+    plt.savefig(f'fig/{name}.png', bbox_inches='tight', dpi=1000)
 
 
 @click.command()
