@@ -98,6 +98,7 @@ async def avatar(update, context):
             )
             r = opinions[opinions['avatar'] == avatar]['round'].max()
             if r > 0:
+                # Restore interrupted previous run of the bot
                 opinions = opinions[opinions['avatar'] == avatar]
                 opinions = opinions[opinions['round'] == r]
                 context.user_data['round'] = r
@@ -158,6 +159,7 @@ async def save_own(update, context):
     try:
         finished = pd.read_csv(AVATARS_FINISHED, names=AVATARS_FINISHED_COLS)
         if context.user_data['avatar'] in set(finished['avatar']):
+            # User has been expelled
             await context.bot.send_message(
                 update.effective_chat.id,
                 'The assembly has finished for you. '
