@@ -114,7 +114,6 @@ async def avatar(update, context):
             'As a participant in this discussion, you are encouraged to share '
             'your thoughts on an increasingly important topic:\n\n'
             f'_{config["title"]}_\n\n'
-            f'{config["description"]}\n\n'
             '👉 Please, *write a short message describing '
             'your opinion about the topic*\\.\n\n'
             '✅ *Remember:* '
@@ -248,8 +247,6 @@ async def show_next(update, context):
         )
         await context.bot.send_message(
             update.effective_chat.id,
-            'Please provide a rating between 0️⃣ and 🔟 of this opinion\\. '
-            'Remember:\n\n'
             f'{scale}\n\n',
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=options_markup(range(11), options_per_row=6)

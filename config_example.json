@@ -1,9 +1,8 @@
 {
   "token": "",
-  "title": "Should we reduce the *environmental impact* of *international meetings*, such as tech, academic and activist convenings or festivals? More specifically, should we prioritize *online formats*?",
-  "description": "⏪ *On one side* of the debate, some may argue that environmental concerns are being overemphasized, possibly affecting the overall experience of such events\\. Or that the impact of this class of events is negligible compared to other types of human activity\\.\n\n⏩ *On the other end* of the spectrum, some may consider that if our community doesn't take radical steps towards environmental responsibility, who will? Thus advocating for a nearly complete shift to online formats and significantly reduced event frequency\\.\n\n⏸ *In the middle,* there could be also considerations of the post\\-pandemic reality and potential mental health implications of limiting such opportunities, as well as the importance of in\\-person networking for new comers\\.",
-  "scale_own": "0️⃣ means that you completely *disagree* with the idea that we go full online\n\nand\n\n🔟 means that you advocate for *fast and radical changes* to event formats\\.",
-  "scale_other": "0️⃣ means that {subject} completely *disagrees* with the idea that we go full online\n\n🔟 means that {subject} advocates for *fast and radical changes* to event formats\\.",
+  "title": "*Training a typical large AI model* results in about *14 tons of CO2 emissions*\\. This is calculated by multiplying the model's power use, training duration, and the carbon intensity of the electricity \\(CO2 emitted per unit of electricity at the considered location\\)\\.This emission is akin to 9 years of CO2 from an average Central European house or 65,000 kilometers driven by an average thermal car\\.\n\n*Considering this environmental impact, should the training of new AI models be restricted?*",
+  "scale_own": "0️⃣ means that you advocate for a *total ban*\n\n🔟 means that you belive that *no restrictions* should be applied",
+  "scale_other": "Do you think that {subject} is *IN FAVOR or AGAINST restrictions?* Please provide\\.\\.\\.\n\n0️⃣ if you think that {subject} advocates for a *total ban*\n\n🔟 if you think that {subject} believes that *no restrictions* should be applied",
   "seconds_to_answer": 60,
   "avatars": [ {
     "beans": "🫘",

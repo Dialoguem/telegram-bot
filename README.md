@@ -18,7 +18,7 @@ Per executar-ho, feu:
 
 On `config.json` és un fitxer amb el mateix format que `config_example.json`.
 Ha de contenir el token del bot de Telegram;
-el títol, descripció i escala del tema de l'assemblea;
+el títol i escala del tema de l'assemblea;
 els segons que té l'usuari per escriure la seva opinió
 abans que se li faci un recordatori;
 i exactament un avatar per cada participant, ni més ni menys.
