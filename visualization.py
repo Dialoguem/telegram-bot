@@ -224,6 +224,7 @@ def get_ratings(own, other, order, round):
     own['object'] = own['avatar']
     other = pd.concat([own, other])
     other = get_pivot(other, 'rating', order)
+    other = other.applymap(float)
     return other
 
 
