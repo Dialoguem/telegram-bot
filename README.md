@@ -55,6 +55,13 @@ Si el seu avatar és _avatar_, es pot expulsar així:
 ./expel.py avatar
 ```
 
+Algun cop ha passat que, per problemes d'Internet,
+es perd algun missatge que envia el bot.
+Llavors, el bot s'encalla perquè espera
+que l'usuari respongui un missatge que no ha rebut.
+Per sortir d'aquest atzucac, l'usuari pot escriure `\repeat`
+i el bot tornarà a enviar el missatge.
+
 Finalment, per generar diverses visualitzacions amb les dades generades,
 es pot fer:
 

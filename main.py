@@ -372,27 +372,33 @@ def main(config_file):
             ],
             State.RATE_OWN: [
                 CallbackQueryHandler(rate_own),
-                CommandHandler('leave', leave)
+                CommandHandler('leave', leave),
+                CommandHandler('repeat', restore)
             ],
             State.SHOW: [
                 CallbackQueryHandler(show),
-                CommandHandler('leave', leave)
+                CommandHandler('leave', leave),
+                CommandHandler('repeat', restore)
             ],
             State.RATE_OTHER: [
                 CallbackQueryHandler(rate_other),
-                CommandHandler('leave', leave)
+                CommandHandler('leave', leave),
+                CommandHandler('repeat', restore)
             ],
             State.COMPROMISE: [
                 CallbackQueryHandler(compromise),
-                CommandHandler('leave', leave)
+                CommandHandler('leave', leave),
+                CommandHandler('repeat', restore)
             ],
             State.CHANGE: [
                 CallbackQueryHandler(change),
-                CommandHandler('leave', leave)
+                CommandHandler('leave', leave),
+                CommandHandler('repeat', restore)
             ],
             State.LEAVE: [
                 CallbackQueryHandler(leave_confirm),
-                CommandHandler('leave', leave)
+                CommandHandler('leave', leave),
+                CommandHandler('repeat', restore)
             ],
             State.END: []
         },
