@@ -33,7 +33,7 @@ config = dict()
 
 State = enum.Enum('State', [
     'AVATAR', 'OPINE', 'RATE_OWN', 'SHOW', 'RATE_OTHER', 'COMPROMISE',
-    'CHANGE', 'END'
+    'CHANGE', 'LEAVE', 'END'
 ])
 
 
@@ -91,39 +91,7 @@ async def avatar(update, context):
     if avatar in config['groups']:
         context.user_data['avatar'] = avatar
         context.user_data['group'] = config['groups'][avatar]
-
-        try:
-            opinions = pd.read_csv(
-                OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t'
-            )
-            r = opinions[opinions['avatar'] == avatar]['round'].max()
-            if r > 0:
-                # Restore interrupted previous run of the bot
-                opinions = opinions[opinions['avatar'] == avatar]
-                opinions = opinions[opinions['round'] == r]
-                context.user_data['round'] = r
-                context.user_data['opinion'] = opinions['opinion'].iloc[0]
-                context.user_data['rating'] = opinions['rating'].iloc[0]
-                return await show(update, context)
-        except FileNotFoundError:
-            pass
-
-        context.user_data['round'] = 1
-        await context.bot.send_message(
-            update.effective_chat.id,
-            'As a participant in this discussion, you are encouraged to share '
-            'your thoughts on an increasingly important topic:\n\n'
-            f'_{config["title"]}_\n\n'
-            '👉 Please, *write a short message describing '
-            'your opinion about the topic*\\.\n\n'
-            '✅ *Remember:* '
-            'All shades of opinion and nuanced motivations are welcome\\!\n\n'
-            'ℹ️ I will inform you when the assembly has ended, '
-            'but you can leave at any time by telling me /leave\\.\n\n',
-            parse_mode=ParseMode.MARKDOWN_V2
-        )
-        wait(update, context)
-        return State.OPINE
+        return await restore(update, context)
     else:
         await context.bot.send_message(
             update.effective_chat.id,
@@ -131,6 +99,42 @@ async def avatar(update, context):
             'Please enter a valid avatar:'
         )
         return State.AVATAR
+
+
+async def restore(update, context):
+    try:
+        opinions = pd.read_csv(
+            OWN_OPINIONS, names=OWN_OPINIONS_COLS, sep='\t'
+        )
+        avatar = context.user_data['avatar']
+        r = opinions[opinions['avatar'] == avatar]['round'].max()
+        if r > 0:
+            # Restore interrupted previous run of the bot
+            opinions = opinions[opinions['avatar'] == avatar]
+            opinions = opinions[opinions['round'] == r]
+            context.user_data['round'] = r
+            context.user_data['opinion'] = opinions['opinion'].iloc[0]
+            context.user_data['rating'] = opinions['rating'].iloc[0]
+            return await show(update, context)
+    except FileNotFoundError:
+        pass
+
+    context.user_data['round'] = 1
+    await context.bot.send_message(
+        update.effective_chat.id,
+        'As a participant in this discussion, you are encouraged to share '
+        'your thoughts on an increasingly important topic:\n\n'
+        f'_{config["title"]}_\n\n'
+        '👉 Please, *write a short message describing '
+        'your opinion about the topic*\\.\n\n'
+        '✅ *Remember:* '
+        'All shades of opinion and nuanced motivations are welcome\\!\n\n'
+        'ℹ️ I will inform you when the assembly has ended, '
+        'but you can leave at any time by telling me /leave\\.\n\n',
+        parse_mode=ParseMode.MARKDOWN_V2
+    )
+    wait(update, context)
+    return State.OPINE
 
 
 async def opine(update, context):
@@ -308,11 +312,24 @@ async def leave(update, context):
         j.schedule_removal()
     if update.callback_query is not None:
         await update.callback_query.edit_message_reply_markup(None)
-    await update.message.reply_text(
-        'Okay, you have left the assembly. '
-        'Thanks for the participation!'
+    await context.bot.send_message(
+        update.effective_chat.id,
+        '⚠️ Are you sure you want to leave? ⚠️',
+        reply_markup=options_markup(['Yes', 'No'])
     )
-    return end(context)
+    return State.LEAVE
+
+
+async def leave_confirm(update, context):
+    if update.callback_query.data == 'Yes':
+        await context.bot.send_message(
+            update.effective_chat.id,
+            'Okay, you have left the assembly. '
+            'Thanks for the participation!'
+        )
+        return end(context)
+    else:
+        return await restore(update, context)
 
 
 def end(context):
@@ -371,6 +388,10 @@ def main(config_file):
             ],
             State.CHANGE: [
                 CallbackQueryHandler(change),
+                CommandHandler('leave', leave)
+            ],
+            State.LEAVE: [
+                CallbackQueryHandler(leave_confirm),
                 CommandHandler('leave', leave)
             ],
             State.END: []
