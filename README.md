@@ -55,6 +55,13 @@ Si el seu avatar és _avatar_, es pot expulsar així:
 ./expel.py avatar
 ```
 
+Per saber quins usuaris són els que fan esperar la resta,
+es pot utilitzar la comanda següent, que mostra l'estat de l'assemblea:
+
+```sh
+./status.py config.json
+```
+
 Algun cop ha passat que, per problemes d'Internet,
 es perd algun missatge que envia el bot.
 Llavors, el bot s'encalla perquè espera
