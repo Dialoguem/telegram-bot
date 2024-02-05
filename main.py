@@ -45,6 +45,16 @@ def options_markup(options, options_per_row=None):
     return InlineKeyboardMarkup(o)
 
 
+def escape(t):
+    chars = [  # https://core.telegram.org/bots/api#markdownv2-style
+        '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|',
+        '{', '}', '.', '!'
+    ]
+    for c in chars:
+        t = t.replace(c, '\\' + c)
+    return t
+
+
 def wait(update, context):
     context.job_queue.run_repeating(
         lambda c: c.bot.send_message(
@@ -58,7 +68,7 @@ def wait(update, context):
 
 async def start(update, _):
     await update.message.reply_text(
-        f'Hello, {update.message.from_user.first_name}\\! '
+        f'Hello, {escape(update.message.from_user.first_name)}\\! '
         'Welcome to the blind assembly *Dialoguem*\\.\n\n'
         'By participating in this social experiment and using the '
         'associated application, you are giving your informed consent for '
